@@ -6,6 +6,8 @@ import { useState } from "react";
 import { SAMPLE_NOTES } from "@/lib/sample-notes";
 import { useTripPickStore } from "@/lib/store";
 import type { AnalysisResult } from "@/lib/schema";
+import { PreferencePanel } from "@/components/PreferencePanel";
+import type { UserPreferences } from "@/lib/preferences";
 
 const MIN_LEN = 20;
 const MAX_LEN = 3500;
@@ -19,6 +21,7 @@ export default function InputPage() {
   const [notes, setNotes] = useState<string[]>(["", "", ""]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [preferences, setPreferences] = useState<UserPreferences | null>(null);
 
   const filled = notes.filter((n) => n.trim().length >= MIN_LEN).length;
   const tooLong = notes.some((n) => n.length > MAX_LEN);
@@ -56,7 +59,7 @@ export default function InputPage() {
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notes: cleaned }),
+        body: JSON.stringify({ notes: cleaned, preferences }),
       });
 
       const body = await res.json();
@@ -140,6 +143,11 @@ export default function InputPage() {
       <p className="mt-2 text-ink-700">
         3–5 篇即可，TripPick 会自动提取关键信息，帮你做决定。
       </p>
+
+      {/* v2.0 新增：偏好面板 */}
+      <div className="mt-6">
+        <PreferencePanel onChange={setPreferences} />
+      </div>
 
       {/* 示例 banner */}
       <div className="mt-6 rounded-2xl bg-accent-50 p-4 ring-1 ring-accent-500/30">

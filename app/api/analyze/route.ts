@@ -20,10 +20,22 @@ import {
   buildConflictsUserPrompt,
 } from "@/lib/prompts";
 import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
+import { preferencesToPromptHint, type UserPreferences } from "@/lib/preferences";
 
 export const runtime = "nodejs";
 // Vercel Hobby 上限为 300 秒；免费 LLM 两次调用总耗时可能 30~90s
 export const maxDuration = 300;
+
+const PreferencesSchema = z
+  .object({
+    budget: z.enum(["budget", "mid", "premium", "any"]).optional(),
+    party_size: z
+      .enum(["solo", "couple", "family", "group", "any"])
+      .optional(),
+    styles: z.array(z.string()).optional(),
+  })
+  .nullable()
+  .optional();
 
 const RequestSchema = z.object({
   notes: z
@@ -31,6 +43,7 @@ const RequestSchema = z.object({
     .min(2, "最少 2 篇笔记")
     .max(8, "最多 8 篇笔记"),
   titles: z.array(z.string()).optional(),
+  preferences: PreferencesSchema,
 });
 
 export async function POST(req: Request) {
@@ -69,11 +82,13 @@ export async function POST(req: Request) {
   }
 
   const { notes, titles } = parsed.data;
+  const preferences = parsed.data.preferences as UserPreferences | null | undefined;
+  const prefHint = preferences ? preferencesToPromptHint(preferences as UserPreferences) : "";
 
   try {
-    // Step 1: 抽取 items
+    // Step 1: 抽取 items (v2.0 拼接用户偏好)
     const extract = await callLLM({
-      systemPrompt: EXTRACT_SYSTEM_PROMPT,
+      systemPrompt: EXTRACT_SYSTEM_PROMPT + prefHint,
       userPrompt: buildExtractUserPrompt(notes),
       schema: ExtractResultSchema,
       tag: "extract",

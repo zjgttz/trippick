@@ -3,6 +3,7 @@
 import type { POIItem } from "@/lib/schema";
 import { ConfidenceRing } from "./ConfidenceRing";
 import { useTripPickStore, type DecisionStatus } from "@/lib/store";
+import { buildXhsSearchUrl } from "@/lib/xhs-link";
 
 interface Props {
   item: POIItem;
@@ -45,6 +46,7 @@ export function POICard({ item, hasConflict, compact }: Props) {
     (s) => s.decisions[item.name] ?? "unset"
   );
   const setDecision = useTripPickStore((s) => s.setDecision);
+  const destination = useTripPickStore((s) => s.analysis?.destination);
 
   return (
     <div
@@ -134,6 +136,18 @@ export function POICard({ item, hasConflict, compact }: Props) {
           );
         })}
       </div>
+
+      {/* v2.0 新增：在小红书中查看更多 */}
+      {!compact && (
+        <a
+          href={buildXhsSearchUrl(item.name, destination)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-2 inline-flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700 hover:underline"
+        >
+          在小红书查看更多说明 <span aria-hidden>↗</span>
+        </a>
+      )}
     </div>
   );
 }
