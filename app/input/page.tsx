@@ -1,11 +1,139 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { SAMPLE_NOTES } from "@/lib/sample-notes";
+import { useTripPickStore } from "@/lib/store";
+import type { AnalysisResult } from "@/lib/schema";
+
+const MIN_LEN = 20;
+const MAX_LEN = 3500;
+const PLACEHOLDER =
+  "把一篇你收藏的小红书攻略正文粘在这里。\n例：「第一天上午先到法喜寺，氛围超棒…」";
 
 export default function InputPage() {
+  const router = useRouter();
+  const setAnalysis = useTripPickStore((s) => s.setAnalysis);
+
+  const [notes, setNotes] = useState<string[]>(["", "", ""]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const filled = notes.filter((n) => n.trim().length >= MIN_LEN).length;
+  const tooLong = notes.some((n) => n.length > MAX_LEN);
+  const canSubmit = filled >= 2 && !tooLong && !loading;
+
+  function updateNote(i: number, v: string) {
+    setNotes((prev) => prev.map((n, idx) => (idx === i ? v : n)));
+  }
+
+  function addNote() {
+    if (notes.length < 8) setNotes((prev) => [...prev, ""]);
+  }
+
+  function removeNote(i: number) {
+    if (notes.length <= 2) return;
+    setNotes((prev) => prev.filter((_, idx) => idx !== i));
+  }
+
+  function fillSample() {
+    setNotes(SAMPLE_NOTES.map((n) => n.content));
+  }
+
+  async function submit() {
+    setError(null);
+    const cleaned = notes
+      .map((n) => n.trim())
+      .filter((n) => n.length >= MIN_LEN);
+    if (cleaned.length < 2) {
+      setError("请至少填写 2 篇笔记，每篇不少于 20 字");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes: cleaned }),
+      });
+
+      const body = await res.json();
+
+      // 速率限制
+      if (res.status === 429) {
+        setError(body.message || "请求过于频繁，请稍后再试");
+        setLoading(false);
+        return;
+      }
+      // 校验失败
+      if (res.status === 400) {
+        setError(body.message || "参数有误");
+        setLoading(false);
+        return;
+      }
+
+      if (body.ok && body.data) {
+        setAnalysis(body.data as AnalysisResult);
+        router.push("/analyze");
+        return;
+      }
+
+      // LLM 失败 → 走 mock fallback
+      if (body.should_fallback) {
+        const mockRes = await fetch("/mock-result.json");
+        const mock = (await mockRes.json()) as AnalysisResult;
+        setAnalysis({ ...mock, is_mock: true });
+        router.push("/analyze?fallback=1");
+        return;
+      }
+
+      setError("AI 分析失败，请稍后重试");
+    } catch (e) {
+      // 网络异常也走 fallback
+      try {
+        const mockRes = await fetch("/mock-result.json");
+        const mock = (await mockRes.json()) as AnalysisResult;
+        setAnalysis({ ...mock, is_mock: true });
+        router.push("/analyze?fallback=1");
+      } catch {
+        setError("网络异常，请检查后重试");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function tryDemo() {
+    setLoading(true);
+    try {
+      const mockRes = await fetch("/mock-result.json");
+      const mock = (await mockRes.json()) as AnalysisResult;
+      setAnalysis({ ...mock, is_mock: true });
+      router.push("/analyze?demo=1");
+    } catch {
+      setError("示例数据加载失败");
+      setLoading(false);
+    }
+  }
+
   return (
-    <main className="mx-auto min-h-screen max-w-3xl px-6 py-12">
-      <Link href="/" className="text-sm text-ink-500 hover:text-ink-900">
-        ← 返回首页
-      </Link>
+    <main className="mx-auto min-h-screen max-w-3xl px-6 py-10">
+      {/* 顶栏 */}
+      <div className="flex items-center justify-between">
+        <Link href="/" className="text-sm text-ink-500 hover:text-ink-900">
+          ← 返回首页
+        </Link>
+        <button
+          onClick={tryDemo}
+          disabled={loading}
+          className="rounded-lg bg-accent-500 px-3 py-1.5 text-xs font-semibold text-ink-900 ring-1 ring-accent-600/30 transition hover:bg-accent-600 disabled:opacity-60"
+        >
+          ✨ 用示例数据
+        </button>
+      </div>
+
       <h1 className="mt-6 text-3xl font-bold tracking-tight">
         粘贴你收藏的小红书攻略
       </h1>
@@ -13,25 +141,111 @@ export default function InputPage() {
         3–5 篇即可，TripPick 会自动提取关键信息，帮你做决定。
       </p>
 
-      <div className="mt-8 rounded-2xl bg-accent-50 p-5 ring-1 ring-accent-500/30">
-        <div className="flex items-start gap-3">
-          <span>✨</span>
-          <div className="flex-1 text-sm text-ink-900">
+      {/* 示例 banner */}
+      <div className="mt-6 rounded-2xl bg-accent-50 p-4 ring-1 ring-accent-500/30">
+        <div className="flex items-start gap-3 text-sm text-ink-900">
+          <span>💡</span>
+          <div className="flex-1">
             没有现成数据？
-            <Link
-              href="/analyze?demo=1"
+            <button
+              onClick={fillSample}
               className="ml-1 font-semibold text-brand-600 underline-offset-2 hover:underline"
             >
-              用示例数据试试 →
-            </Link>
+              一键填充 5 篇杭州示例攻略 →
+            </button>
+            <span className="ml-1 text-xs text-ink-500">
+              （会真正调用 AI 分析，让你体验完整链路）
+            </span>
           </div>
         </div>
       </div>
 
-      <div className="mt-8 rounded-2xl border-2 border-dashed border-ink-300 bg-white p-10 text-center text-ink-500">
-        输入表单功能正在搭建中（P6 阶段交付）…
-        <br />
-        <span className="text-xs">当前已上线：Landing + 路由骨架 + 示例分析入口</span>
+      {/* 输入区 */}
+      <div className="mt-6 space-y-4">
+        {notes.map((n, i) => {
+          const overflow = n.length > MAX_LEN;
+          const ok = n.trim().length >= MIN_LEN;
+          return (
+            <div
+              key={i}
+              className={`relative rounded-2xl bg-white p-4 ring-1 transition ${
+                overflow
+                  ? "ring-red-300"
+                  : ok
+                    ? "ring-brand-200"
+                    : "ring-ink-100"
+              }`}
+            >
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-ink-700">
+                  笔记 {i + 1}
+                  {ok && <span className="ml-2 text-brand-500">✓</span>}
+                </span>
+                <div className="flex items-center gap-3 text-ink-500">
+                  <span className={overflow ? "text-red-500" : ""}>
+                    {n.length} / {MAX_LEN}
+                  </span>
+                  {notes.length > 2 && (
+                    <button
+                      onClick={() => removeNote(i)}
+                      className="text-ink-500 hover:text-red-500"
+                      aria-label="删除"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </div>
+              <textarea
+                value={n}
+                onChange={(e) => updateNote(i, e.target.value)}
+                placeholder={PLACEHOLDER}
+                rows={6}
+                className="mt-2 w-full resize-y rounded-lg bg-ink-100/60 px-3 py-2 text-sm text-ink-900 placeholder:text-ink-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-200"
+              />
+            </div>
+          );
+        })}
+
+        {notes.length < 8 && (
+          <button
+            onClick={addNote}
+            className="w-full rounded-2xl border-2 border-dashed border-ink-300 py-3 text-sm text-ink-500 transition hover:border-brand-200 hover:text-brand-500"
+          >
+            ＋ 继续添加（最多 8 篇）
+          </button>
+        )}
+      </div>
+
+      {/* 错误提示 */}
+      {error && (
+        <div className="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600 ring-1 ring-red-100">
+          {error}
+        </div>
+      )}
+
+      {/* 底部 CTA */}
+      <div className="mt-8 flex items-center justify-between gap-4">
+        <div className="text-xs text-ink-500">
+          已填写 <span className="font-semibold text-ink-900">{filled}</span> 篇 ·
+          最少 2 篇可分析
+        </div>
+        <button
+          onClick={submit}
+          disabled={!canSubmit}
+          className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {loading ? (
+            <>
+              <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+              AI 正在分析…
+            </>
+          ) : (
+            <>
+              分析这些攻略 <span aria-hidden>→</span>
+            </>
+          )}
+        </button>
       </div>
     </main>
   );

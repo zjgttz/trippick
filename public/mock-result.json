@@ -1,0 +1,614 @@
+{
+  "destination": "杭州",
+  "trip_style": ["西湖深度游", "寺庙祈福", "拍照打卡", "citywalk", "小众慢游"],
+  "items": [
+    {
+      "name": "断桥（断桥残雪）",
+      "type": "景点",
+      "source_count": 4,
+      "recommended_reasons": ["西湖经典", "白娘子许仙传说", "拍照机位", "近白堤", "可远眺保俶塔"],
+      "warnings": ["早上 7-8 点最佳，否则人多", "周末人极多"],
+      "suitable_for": ["情侣", "拍照党", "首次到杭州"],
+      "estimated_budget": "免费",
+      "suggested_time": "清晨 7-8 点或傍晚",
+      "confidence_score": 92
+    },
+    {
+      "name": "灵隐寺",
+      "type": "景点",
+      "source_count": 4,
+      "recommended_reasons": ["香火旺盛", "祈福灵验", "可求事业财运平安", "目前免门票"],
+      "warnings": ["需提前一天预约", "白天网约车上不去，建议公交专线", "节假日人非常多"],
+      "suitable_for": ["全家", "情侣", "祈福需求"],
+      "estimated_budget": "免费（飞来峰 45元另算）",
+      "suggested_time": "上午",
+      "confidence_score": 90
+    },
+    {
+      "name": "法喜寺",
+      "type": "景点",
+      "source_count": 3,
+      "recommended_reasons": ["拍照好看", "氛围安静", "适合女生", "与灵隐寺可串联"],
+      "warnings": ["周末人多", "需早到", "山上路较陡"],
+      "suitable_for": ["女生", "情侣", "拍照党"],
+      "estimated_budget": "10-30元/人",
+      "suggested_time": "上午、平日",
+      "confidence_score": 86
+    },
+    {
+      "name": "苏堤",
+      "type": "景点",
+      "source_count": 4,
+      "recommended_reasons": ["西湖经典", "杨柳和桃树", "适合骑行", "有观光电瓶车"],
+      "warnings": ["走路太累，建议骑车或电瓶车"],
+      "suitable_for": ["情侣", "家庭", "骑行党"],
+      "estimated_budget": "免费 / 电瓶车 10元",
+      "suggested_time": "上午或下午",
+      "confidence_score": 88
+    },
+    {
+      "name": "白堤",
+      "type": "景点",
+      "source_count": 4,
+      "recommended_reasons": ["杨柳桃树齐刷刷", "3月桃花封神", "可偶遇鸳鸯"],
+      "warnings": [],
+      "suitable_for": ["情侣", "拍照党"],
+      "estimated_budget": "免费",
+      "suggested_time": "上午或下午",
+      "confidence_score": 84
+    },
+    {
+      "name": "三潭映月",
+      "type": "景点",
+      "source_count": 2,
+      "recommended_reasons": ["一元人民币背面同款", "湖中岛风景独特", "可远观雷峰塔"],
+      "warnings": ["需要坐船 70元包往返", "提前备 1 元纸币更有仪式感"],
+      "suitable_for": ["首次游客", "亲子"],
+      "estimated_budget": "船票 70元/人",
+      "suggested_time": "上午",
+      "confidence_score": 80
+    },
+    {
+      "name": "花港观鱼",
+      "type": "景点",
+      "source_count": 3,
+      "recommended_reasons": ["大草坪", "湖边座椅多", "适合野餐"],
+      "warnings": [],
+      "suitable_for": ["亲子", "情侣"],
+      "estimated_budget": "免费",
+      "suggested_time": "下午",
+      "confidence_score": 78
+    },
+    {
+      "name": "雷峰塔",
+      "type": "景点",
+      "source_count": 3,
+      "recommended_reasons": ["西湖标志性建筑", "可远观即可", "搭配长桥日落"],
+      "warnings": ["可不上塔，外面拍全景就行", "门票 40 元"],
+      "suitable_for": ["首次到杭州"],
+      "estimated_budget": "外观免费 / 登塔 40元",
+      "suggested_time": "傍晚",
+      "confidence_score": 74
+    },
+    {
+      "name": "长桥（长桥溪水生态修复公园）",
+      "type": "景点",
+      "source_count": 2,
+      "recommended_reasons": ["日落绝美", "五一上万株鸢尾花", "与雷峰塔可同框", "免费"],
+      "warnings": [],
+      "suitable_for": ["情侣", "拍照党"],
+      "estimated_budget": "免费",
+      "suggested_time": "傍晚",
+      "confidence_score": 82
+    },
+    {
+      "name": "九溪十八涧（九溪烟树）",
+      "type": "景点",
+      "source_count": 3,
+      "recommended_reasons": ["徒步好去处", "曲径通幽", "全程平缓没有台阶", "溪流瀑布"],
+      "warnings": ["建议穿防水鞋子", "全程约 40 分钟"],
+      "suitable_for": ["徒步党", "亲子", "情侣"],
+      "estimated_budget": "免费（摆渡车 8元）",
+      "suggested_time": "上午或下午",
+      "confidence_score": 85
+    },
+    {
+      "name": "龙井村 / 龙井茶山",
+      "type": "景点",
+      "source_count": 3,
+      "recommended_reasons": ["茶山徒步", "可买茶叶", "与九溪可串联"],
+      "warnings": ["西湖边卖的龙井 99% 是假的，要买请到龙井村"],
+      "suitable_for": ["徒步党", "茶文化爱好者"],
+      "estimated_budget": "免费 / 茶叶看品类",
+      "suggested_time": "上午",
+      "confidence_score": 80
+    },
+    {
+      "name": "杨公堤",
+      "type": "景点",
+      "source_count": 3,
+      "recommended_reasons": ["人比西湖少 90%", "水杉林", "过山车马路体验", "里西湖环线"],
+      "warnings": [],
+      "suitable_for": ["小众游客", "拍照党"],
+      "estimated_budget": "免费",
+      "suggested_time": "上午",
+      "confidence_score": 81
+    },
+    {
+      "name": "茅家埠",
+      "type": "景点",
+      "source_count": 2,
+      "recommended_reasons": ["人少景美", "西湖西线徒步起点"],
+      "warnings": [],
+      "suitable_for": ["小众游客", "徒步党"],
+      "estimated_budget": "免费",
+      "suggested_time": "上午",
+      "confidence_score": 75
+    },
+    {
+      "name": "郭庄",
+      "type": "景点",
+      "source_count": 2,
+      "recommended_reasons": ["园林风", "五一月季展", "穿汉服绝配"],
+      "warnings": ["门票 10元"],
+      "suitable_for": ["汉服党", "拍照党"],
+      "estimated_budget": "10元",
+      "suggested_time": "上午",
+      "confidence_score": 76
+    },
+    {
+      "name": "乌龟潭",
+      "type": "景点",
+      "source_count": 3,
+      "recommended_reasons": ["手摇船小西湖路线", "沿途水草芦苇荡", "船夫推荐里面才见真景"],
+      "warnings": ["手摇船排队久，不能晚于上午 9 点", "马家湾码头周末限行，需打到里太祖湾再走"],
+      "suitable_for": ["情侣", "小众游客"],
+      "estimated_budget": "手摇船 3小时 300元/船",
+      "suggested_time": "上午",
+      "confidence_score": 83
+    },
+    {
+      "name": "良渚文化遗址公园",
+      "type": "景点",
+      "source_count": 2,
+      "recommended_reasons": ["大片月见草和鸢尾花", "稻草堆茅草屋", "可遇可爱小鹿", "出片"],
+      "warnings": ["外地游客 60 元门票", "距市区约 30 公里"],
+      "suitable_for": ["拍照党", "情侣"],
+      "estimated_budget": "60元/人",
+      "suggested_time": "上午",
+      "confidence_score": 78
+    },
+    {
+      "name": "国家版本馆",
+      "type": "景点",
+      "source_count": 1,
+      "recommended_reasons": ["肖战同款屏风", "外延数公里蔷薇花墙"],
+      "warnings": ["需预约"],
+      "suitable_for": ["文艺青年", "粉丝打卡"],
+      "estimated_budget": "免费但需预约",
+      "suggested_time": "下午",
+      "confidence_score": 70
+    },
+    {
+      "name": "大屋顶 + 晓书馆",
+      "type": "景点",
+      "source_count": 1,
+      "recommended_reasons": ["文艺地标", "书店氛围好"],
+      "warnings": ["晓书馆需预约"],
+      "suitable_for": ["文艺青年"],
+      "estimated_budget": "免费",
+      "suggested_time": "下午",
+      "confidence_score": 68
+    },
+    {
+      "name": "西溪湿地",
+      "type": "景点",
+      "source_count": 1,
+      "recommended_reasons": ["福堤一路向南徒步", "蒋村集市", "河渚塔河渚街"],
+      "warnings": ["需较长游览时间，一天为宜"],
+      "suitable_for": ["亲子", "徒步党"],
+      "estimated_budget": "门票约 80元",
+      "suggested_time": "上午",
+      "confidence_score": 72
+    },
+    {
+      "name": "西泠印社",
+      "type": "景点",
+      "source_count": 2,
+      "recommended_reasons": ["文化底蕴", "石板路登高远眺西湖", "无游客喧闹"],
+      "warnings": ["石板路陡"],
+      "suitable_for": ["文艺青年", "安静游"],
+      "estimated_budget": "免费",
+      "suggested_time": "上午",
+      "confidence_score": 76
+    },
+    {
+      "name": "孤山 / 孤山路",
+      "type": "景点",
+      "source_count": 3,
+      "recommended_reasons": ["沿湖步行", "可偶遇鸳鸯", "靠近西泠印社"],
+      "warnings": [],
+      "suitable_for": ["情侣", "citywalk"],
+      "estimated_budget": "免费",
+      "suggested_time": "上午",
+      "confidence_score": 78
+    },
+    {
+      "name": "北山街",
+      "type": "景点",
+      "source_count": 1,
+      "recommended_reasons": ["梧桐树+湛蓝西湖", "晨风长椅"],
+      "warnings": [],
+      "suitable_for": ["citywalk", "拍照党"],
+      "estimated_budget": "免费",
+      "suggested_time": "清晨",
+      "confidence_score": 74
+    },
+    {
+      "name": "太子湾公园",
+      "type": "景点",
+      "source_count": 1,
+      "recommended_reasons": ["树荫静谧", "杭州松弛感"],
+      "warnings": [],
+      "suitable_for": ["慢游党", "亲子"],
+      "estimated_budget": "免费",
+      "suggested_time": "下午",
+      "confidence_score": 72
+    },
+    {
+      "name": "虎跑公园",
+      "type": "景点",
+      "source_count": 1,
+      "recommended_reasons": ["虎跑泉水清", "竹林遮天蔽日"],
+      "warnings": ["本地人会带瓶接水"],
+      "suitable_for": ["慢游党"],
+      "estimated_budget": "门票 15元",
+      "suggested_time": "下午",
+      "confidence_score": 70
+    },
+    {
+      "name": "柳浪闻莺",
+      "type": "景点",
+      "source_count": 2,
+      "recommended_reasons": ["西湖夜景顺路", "连通银泰 in77"],
+      "warnings": [],
+      "suitable_for": ["夜游", "情侣"],
+      "estimated_budget": "免费",
+      "suggested_time": "傍晚",
+      "confidence_score": 75
+    },
+    {
+      "name": "河坊街",
+      "type": "景点",
+      "source_count": 3,
+      "recommended_reasons": ["老街氛围", "夜游适合", "小吃和伴手礼"],
+      "warnings": ["买东西去超市更便宜", "网红小吃避雷"],
+      "suitable_for": ["夜游", "citywalk"],
+      "estimated_budget": "免费",
+      "suggested_time": "晚上",
+      "confidence_score": 72
+    },
+    {
+      "name": "南宋御街",
+      "type": "景点",
+      "source_count": 2,
+      "recommended_reasons": ["与河坊街相连", "古风街区"],
+      "warnings": [],
+      "suitable_for": ["citywalk"],
+      "estimated_budget": "免费",
+      "suggested_time": "晚上",
+      "confidence_score": 70
+    },
+    {
+      "name": "十五奎巷 + 大马弄",
+      "type": "景点",
+      "source_count": 2,
+      "recommended_reasons": ["老杭州生活气", "葱包桧现做", "新丰小吃"],
+      "warnings": [],
+      "suitable_for": ["citywalk", "美食党"],
+      "estimated_budget": "10-50元/人",
+      "suggested_time": "上午或下午",
+      "confidence_score": 76
+    },
+    {
+      "name": "胡雪岩故居",
+      "type": "景点",
+      "source_count": 1,
+      "recommended_reasons": ["江南园林精品", "老城区游线节点"],
+      "warnings": [],
+      "suitable_for": ["文化游"],
+      "estimated_budget": "门票 20元",
+      "suggested_time": "下午",
+      "confidence_score": 68
+    },
+    {
+      "name": "德寿宫",
+      "type": "景点",
+      "source_count": 1,
+      "recommended_reasons": ["南宋遗址博物馆", "免费需预约"],
+      "warnings": ["需预约"],
+      "suitable_for": ["历史爱好者"],
+      "estimated_budget": "免费",
+      "suggested_time": "下午",
+      "confidence_score": 70
+    },
+    {
+      "name": "小河直街 + 拱宸桥",
+      "type": "景点",
+      "source_count": 1,
+      "recommended_reasons": ["运河老街区夜景", "拱宸桥地标"],
+      "warnings": [],
+      "suitable_for": ["夜游", "citywalk"],
+      "estimated_budget": "免费",
+      "suggested_time": "傍晚",
+      "confidence_score": 72
+    },
+    {
+      "name": "天目里市集",
+      "type": "景点",
+      "source_count": 1,
+      "recommended_reasons": ["水镜广场倒影", "白色建筑文艺感"],
+      "warnings": [],
+      "suitable_for": ["文艺青年"],
+      "estimated_budget": "免费",
+      "suggested_time": "下午",
+      "confidence_score": 70
+    },
+    {
+      "name": "望湖小馆",
+      "type": "餐厅",
+      "source_count": 1,
+      "recommended_reasons": ["龙井虾仁", "茶香小酥肉", "东坡肉好吃没踩雷"],
+      "warnings": [],
+      "suitable_for": ["朋友聚餐", "情侣"],
+      "estimated_budget": "人均 100-150 元",
+      "suggested_time": "午餐",
+      "confidence_score": 80
+    },
+    {
+      "name": "老头儿油爆虾·1987(湖滨银泰in77)",
+      "type": "餐厅",
+      "source_count": 1,
+      "recommended_reasons": ["杭州烟火味", "招牌油爆虾"],
+      "warnings": [],
+      "suitable_for": ["朋友聚餐"],
+      "estimated_budget": "人均 100-130 元",
+      "suggested_time": "晚餐",
+      "confidence_score": 76
+    },
+    {
+      "name": "湖栖面馆·家传杭帮面(湖滨店)",
+      "type": "餐厅",
+      "source_count": 1,
+      "recommended_reasons": ["杭帮面", "酒店楼下方便"],
+      "warnings": [],
+      "suitable_for": ["夜宵", "一人食"],
+      "estimated_budget": "人均 40-60 元",
+      "suggested_time": "晚餐或夜宵",
+      "confidence_score": 72
+    },
+    {
+      "name": "食日长酒家",
+      "type": "餐厅",
+      "source_count": 1,
+      "recommended_reasons": ["灵隐寺步行可达", "中式装潢庭院", "仪式感强"],
+      "warnings": ["人均 200，偏贵"],
+      "suitable_for": ["纪念日", "情侣"],
+      "estimated_budget": "人均 200 元",
+      "suggested_time": "晚餐",
+      "confidence_score": 75
+    },
+    {
+      "name": "四灶儿",
+      "type": "餐厅",
+      "source_count": 1,
+      "recommended_reasons": ["红烧肉夹酒酿馒头", "小炒王", "炒黄鳝丝", "醋泡凤爪"],
+      "warnings": [],
+      "suitable_for": ["朋友聚餐"],
+      "estimated_budget": "人均 80-120 元",
+      "suggested_time": "午餐",
+      "confidence_score": 78
+    },
+    {
+      "name": "玉鸟集",
+      "type": "餐厅",
+      "source_count": 1,
+      "recommended_reasons": ["良渚园区集市", "午饭选择多"],
+      "warnings": [],
+      "suitable_for": ["亲子", "情侣"],
+      "estimated_budget": "人均 50-100 元",
+      "suggested_time": "午餐",
+      "confidence_score": 70
+    },
+    {
+      "name": "王氏烧饼(西溪路店)",
+      "type": "餐厅",
+      "source_count": 1,
+      "recommended_reasons": ["招牌饭团烧饼豆浆", "早餐性价比"],
+      "warnings": [],
+      "suitable_for": ["早餐"],
+      "estimated_budget": "人均 15-25 元",
+      "suggested_time": "早餐",
+      "confidence_score": 72
+    },
+    {
+      "name": "beans cafe",
+      "type": "餐厅",
+      "source_count": 1,
+      "recommended_reasons": ["独立小院子", "有店猫", "氛围温馨"],
+      "warnings": ["周末人多"],
+      "suitable_for": ["独自游", "情侣"],
+      "estimated_budget": "人均 40-60 元",
+      "suggested_time": "下午茶",
+      "confidence_score": 70
+    },
+    {
+      "name": "祺悦宋胤酒店(湖滨银泰in77店)",
+      "type": "住宿",
+      "source_count": 1,
+      "recommended_reasons": ["距龙翔桥地铁 300 米", "含双早", "旁边即商场"],
+      "warnings": [],
+      "suitable_for": ["首次到杭州", "情侣"],
+      "estimated_budget": "约 250元/晚",
+      "suggested_time": "—",
+      "confidence_score": 75
+    },
+    {
+      "name": "杭州西湖亚朵音乐酒店",
+      "type": "住宿",
+      "source_count": 1,
+      "recommended_reasons": ["靠近西湖", "音乐主题"],
+      "warnings": [],
+      "suitable_for": ["情侣", "商务"],
+      "estimated_budget": "约 500元/晚",
+      "suggested_time": "—",
+      "confidence_score": 72
+    },
+    {
+      "name": "龙翔桥/凤起路区域",
+      "type": "住宿",
+      "source_count": 1,
+      "recommended_reasons": ["离西湖近", "地铁方便"],
+      "warnings": ["价格偏高"],
+      "suitable_for": ["首次到杭州"],
+      "estimated_budget": "300-500元/晚",
+      "suggested_time": "—",
+      "confidence_score": 74
+    },
+    {
+      "name": "西湖最美水上巴士",
+      "type": "交通",
+      "source_count": 1,
+      "recommended_reasons": ["3 元票价", "35 分钟穿过十几座桥", "江南韵味"],
+      "warnings": ["40 分钟一趟，需排队", "船次少"],
+      "suitable_for": ["citywalk"],
+      "estimated_budget": "3元",
+      "suggested_time": "上午或下午",
+      "confidence_score": 73
+    },
+    {
+      "name": "共享单车 + 地铁",
+      "type": "交通",
+      "source_count": 2,
+      "recommended_reasons": ["50 元搞定全天", "西湖周边节假日堵车，骑行更高效"],
+      "warnings": [],
+      "suitable_for": ["全年龄"],
+      "estimated_budget": "约 50元/天",
+      "suggested_time": "—",
+      "confidence_score": 80
+    },
+    {
+      "name": "西湖醋鱼",
+      "type": "其他",
+      "source_count": 1,
+      "recommended_reasons": [],
+      "warnings": ["本地人都不吃", "踩雷高发"],
+      "suitable_for": [],
+      "estimated_budget": "—",
+      "suggested_time": "—",
+      "confidence_score": 30
+    },
+    {
+      "name": "武林夜市",
+      "type": "其他",
+      "source_count": 1,
+      "recommended_reasons": [],
+      "warnings": ["全是网红小吃，狠狠避雷"],
+      "suitable_for": [],
+      "estimated_budget": "—",
+      "suggested_time": "—",
+      "confidence_score": 32
+    }
+  ],
+  "conflicts": [
+    {
+      "conflict_type": "distance",
+      "items": ["良渚文化遗址公园", "西湖（断桥/苏堤/白堤）"],
+      "reason": "良渚距西湖市区约 30 公里，驾车 40 分钟以上，往返耗时长，不建议与西湖景点同日安排",
+      "suggestion": "把良渚单独安排成一整天（Day 3 或 Day 4），与西溪湿地不建议同日"
+    },
+    {
+      "conflict_type": "distance",
+      "items": ["法喜寺", "灵隐寺", "九溪十八涧"],
+      "reason": "三个点都在西湖西侧山区，距离虽近但步行/换乘耗时大，连排会导致后段疲劳",
+      "suggestion": "法喜寺 + 灵隐寺组合为半日；九溪十八涧单独半日，最好和龙井村串联"
+    },
+    {
+      "conflict_type": "opinion",
+      "items": ["雷峰塔"],
+      "reason": "多篇推荐看日落同框，但也有人明确表示'可不上塔，外面拍全景就行'，登塔体验有分歧",
+      "suggestion": "傍晚到长桥拍雷峰塔同框即可，是否登塔取决于个人偏好（门票 40 元）"
+    },
+    {
+      "conflict_type": "opinion",
+      "items": ["西湖醋鱼", "武林夜市"],
+      "reason": "这两项在多篇笔记中以避雷形式出现，几乎无正面推荐",
+      "suggestion": "正餐建议选望湖小馆 / 四灶儿 / 老头儿油爆虾；夜市可换河坊街沿街老字号"
+    },
+    {
+      "conflict_type": "time_overload",
+      "items": ["断桥", "白堤", "孤山", "苏堤", "花港观鱼", "雷峰塔", "长桥"],
+      "reason": "西湖经典环线 7 个点都被建议同一天走完，按步行节奏会非常密集",
+      "suggestion": "拆成两段：上午断桥-白堤-孤山；下午苏堤-花港观鱼-长桥-雷峰塔，并使用电瓶车/单车"
+    },
+    {
+      "conflict_type": "time_overload",
+      "items": ["法喜寺", "灵隐寺", "九溪十八涧", "龙井村", "杨公堤"],
+      "reason": "多个西线点都建议上午，集中安排会使上午行程过密",
+      "suggestion": "Day 2 上午灵隐 + 法喜寺；Day 2 下午龙井 + 九溪；Day 3 上午杨公堤里西湖环线"
+    },
+    {
+      "conflict_type": "prerequisite",
+      "items": ["灵隐寺"],
+      "reason": "需要提前一天通过公众号或官网预约，临时到达可能无法入内（已有用户因此进不去）",
+      "suggestion": "出行前一天 18:00 前完成预约，并截图保存预约二维码"
+    },
+    {
+      "conflict_type": "prerequisite",
+      "items": ["乌龟潭手摇船"],
+      "reason": "上午 9 点后排队可达百米；马家湾码头周末限行，打车不能直达",
+      "suggestion": "8:30 前到码头；周末打车定位'里太祖湾 157 号'再走接驳公交到苏堤站"
+    },
+    {
+      "conflict_type": "prerequisite",
+      "items": ["国家版本馆", "晓书馆", "德寿宫"],
+      "reason": "三项都需要提前预约，临时到达可能无法入内",
+      "suggestion": "提前 1-3 天在各自官方公众号预约"
+    }
+  ],
+  "itinerary_suggestion": [
+    {
+      "day": 1,
+      "slots": [
+        { "time_slot": "morning", "items": ["断桥（断桥残雪）", "白堤", "孤山 / 孤山路"], "note": "7:30 前到断桥避开人流，沿白堤步行至孤山，约 1.5 小时" },
+        { "time_slot": "afternoon", "items": ["苏堤", "花港观鱼", "望湖小馆"], "note": "苏堤建议骑共享单车或电瓶车（10元）；望湖小馆作为午餐" },
+        { "time_slot": "evening", "items": ["长桥（长桥溪水生态修复公园）", "雷峰塔", "河坊街"], "note": "傍晚长桥拍日落+雷峰塔同框，晚上河坊街溜达吃晚饭" }
+      ]
+    },
+    {
+      "day": 2,
+      "slots": [
+        { "time_slot": "morning", "items": ["灵隐寺", "法喜寺"], "note": "前一天 18 点前完成灵隐寺预约；公交专线进飞来峰景区" },
+        { "time_slot": "afternoon", "items": ["龙井村 / 龙井茶山", "九溪十八涧（九溪烟树）"], "note": "87 路到龙井茶室，徒步至九溪烟树约 40 分钟，平缓好走" },
+        { "time_slot": "evening", "items": ["食日长酒家", "柳浪闻莺"], "note": "晚餐选食日长（人均 200，仪式感强）；饭后柳浪闻莺看夜景" }
+      ]
+    },
+    {
+      "day": 3,
+      "slots": [
+        { "time_slot": "morning", "items": ["乌龟潭", "杨公堤", "茅家埠"], "note": "8:30 前到马家湾码头排手摇船，下船后沿杨公堤散步" },
+        { "time_slot": "afternoon", "items": ["太子湾公园", "十五奎巷 + 大马弄", "胡雪岩故居"], "note": "下午老城区 citywalk，葱包桧+新丰小吃做下午茶" },
+        { "time_slot": "evening", "items": ["四灶儿", "南宋御街"], "note": "四灶儿吃晚餐再去南宋御街/河坊街溜达" }
+      ]
+    }
+  ],
+  "source_titles": [
+    "7年走遍杭州，总结的五一版杭州4-5日游攻略",
+    "懒人版杭州2日游｜住宿+交通+美食全搞定",
+    "深圳牛马周末无痛游杭州 保姆级攻略",
+    "杭州 3 天 2 夜｜10 篇高赞攻略揉一起了",
+    "\"慢游\"杭州，拒绝人挤人"
+  ],
+  "generated_at": "2026-05-11T00:00:00Z",
+  "is_mock": true
+}
