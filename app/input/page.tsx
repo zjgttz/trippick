@@ -8,6 +8,7 @@ import { useTripPickStore } from "@/lib/store";
 import type { AnalysisResult } from "@/lib/schema";
 import { PreferencePanel } from "@/components/PreferencePanel";
 import type { UserPreferences } from "@/lib/preferences";
+import { parseXhsShare, looksLikeXhsShare } from "@/lib/parse-xhs-share";
 
 const MIN_LEN = 20;
 const MAX_LEN = 3500;
@@ -22,6 +23,8 @@ export default function InputPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
+  // v2.0 M3：每个输入框单独的「检测到小红书分享文案」提示
+  const [parseHints, setParseHints] = useState<(string | null)[]>([null, null, null]);
 
   const filled = notes.filter((n) => n.trim().length >= MIN_LEN).length;
   const tooLong = notes.some((n) => n.length > MAX_LEN);
@@ -29,15 +32,41 @@ export default function InputPage() {
 
   function updateNote(i: number, v: string) {
     setNotes((prev) => prev.map((n, idx) => (idx === i ? v : n)));
+    // 检测分享文案
+    if (looksLikeXhsShare(v)) {
+      const r = parseXhsShare(v);
+      if (r && r.cleaned !== v.trim()) {
+        setParseHints((prev) =>
+          prev.map((h, idx) =>
+            idx === i
+              ? `检测到小红书分享文案${r.shortLink ? "（含链接）" : ""}，可一键清洗为正文`
+              : h,
+          ),
+        );
+        return;
+      }
+    }
+    setParseHints((prev) => prev.map((h, idx) => (idx === i ? null : h)));
+  }
+
+  function applyParse(i: number) {
+    const r = parseXhsShare(notes[i]);
+    if (!r) return;
+    setNotes((prev) => prev.map((n, idx) => (idx === i ? r.cleaned : n)));
+    setParseHints((prev) => prev.map((h, idx) => (idx === i ? null : h)));
   }
 
   function addNote() {
-    if (notes.length < 8) setNotes((prev) => [...prev, ""]);
+    if (notes.length < 8) {
+      setNotes((prev) => [...prev, ""]);
+      setParseHints((prev) => [...prev, null]);
+    }
   }
 
   function removeNote(i: number) {
     if (notes.length <= 2) return;
     setNotes((prev) => prev.filter((_, idx) => idx !== i));
+    setParseHints((prev) => prev.filter((_, idx) => idx !== i));
   }
 
   function fillSample() {
@@ -143,6 +172,9 @@ export default function InputPage() {
       <p className="mt-2 text-ink-700">
         3–5 篇即可，TripPick 会自动提取关键信息，帮你做决定。
       </p>
+      <p className="mt-1 text-xs text-ink-500">
+        💡 从小红书 APP「分享 → 复制链接」得到的整段文案可以直接粘贴，系统会自动识别并清洗。
+      </p>
 
       {/* v2.0 新增：偏好面板 */}
       <div className="mt-6">
@@ -211,6 +243,17 @@ export default function InputPage() {
                 rows={6}
                 className="mt-2 w-full resize-y rounded-lg bg-ink-100/60 px-3 py-2 text-sm text-ink-900 placeholder:text-ink-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-200"
               />
+              {parseHints[i] && (
+                <div className="mt-2 flex items-center justify-between rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-600 ring-1 ring-brand-200">
+                  <span>📋 {parseHints[i]}</span>
+                  <button
+                    onClick={() => applyParse(i)}
+                    className="rounded-md bg-brand-500 px-2 py-1 font-semibold text-white transition hover:bg-brand-600"
+                  >
+                    一键清洗
+                  </button>
+                </div>
+              )}
             </div>
           );
         })}
