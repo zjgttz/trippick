@@ -1,6 +1,11 @@
 /**
- * OpenRouter LLM 调用封装
- * - JSON mode 强制
+ * LLM 调用封装
+ * 支持两个后端，按以下优先级自动选择：
+ *   1. GEMINI_API_KEY -> 原生 Google Gemini API（快、免费额度大）
+ *   2. OPENROUTER_API_KEY -> OpenRouter（备用，可调多家模型）
+ *
+ * 公共特性：
+ * - 强制 JSON 输出
  * - 最多 3 次重试
  * - 自动剥离 markdown 包裹
  * - 失败抛出 LLMError 供上层兜底
@@ -20,7 +25,8 @@ export class LLMError extends Error {
 }
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const DEFAULT_MODEL = "google/gemini-2.5-pro";
+const OPENROUTER_DEFAULT_MODEL = "google/gemini-2.5-pro";
+const GEMINI_DEFAULT_MODEL = "gemini-2.5-flash";
 const MAX_RETRIES = 3;
 
 interface CallOptions<S extends ZodType> {
@@ -47,54 +53,117 @@ function stripFences(s: string): string {
   return t.trim();
 }
 
+/** 调用原生 Google Gemini API（generateContent 接口） */
+async function callGemini(
+  systemPrompt: string,
+  userPrompt: string,
+  temperature: number
+): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY!;
+  const model = process.env.GEMINI_MODEL || GEMINI_DEFAULT_MODEL;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+      generationConfig: {
+        temperature,
+        responseMimeType: "application/json",
+      },
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new LLMError(
+      `Gemini HTTP ${res.status}: ${text.slice(0, 300)}`,
+      "network"
+    );
+  }
+
+  const data = (await res.json()) as {
+    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+  };
+  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new LLMError("Gemini 返回空内容", "empty");
+  return text;
+}
+
+/** 调用 OpenRouter（OpenAI 兼容接口） */
+async function callOpenRouter(
+  systemPrompt: string,
+  userPrompt: string,
+  temperature: number
+): Promise<string> {
+  const apiKey = process.env.OPENROUTER_API_KEY!;
+  const model = process.env.OPENROUTER_MODEL || OPENROUTER_DEFAULT_MODEL;
+
+  const res = await fetch(OPENROUTER_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+      "HTTP-Referer":
+        process.env.OPENROUTER_SITE_URL || "https://trippick.vercel.app",
+      "X-Title": process.env.OPENROUTER_SITE_NAME || "TripPick",
+    },
+    body: JSON.stringify({
+      model,
+      temperature,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new LLMError(
+      `OpenRouter HTTP ${res.status}: ${text.slice(0, 300)}`,
+      "network"
+    );
+  }
+
+  const data = (await res.json()) as {
+    choices?: Array<{ message?: { content?: string } }>;
+  };
+  const raw = data?.choices?.[0]?.message?.content;
+  if (!raw) throw new LLMError("OpenRouter 返回空内容", "empty");
+  return raw;
+}
+
 export async function callLLM<S extends ZodType>(
   options: CallOptions<S>
 ): Promise<z.output<S>> {
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) {
-    throw new LLMError("OPENROUTER_API_KEY 未配置", "network");
-  }
-  const model = process.env.OPENROUTER_MODEL || DEFAULT_MODEL;
+  const hasGemini = !!process.env.GEMINI_API_KEY;
+  const hasOpenRouter = !!process.env.OPENROUTER_API_KEY;
 
+  if (!hasGemini && !hasOpenRouter) {
+    throw new LLMError(
+      "未配置 LLM Key（需要 GEMINI_API_KEY 或 OPENROUTER_API_KEY）",
+      "network"
+    );
+  }
+
+  const temperature = options.temperature ?? 0.2;
   let lastErr: unknown = null;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const res = await fetch(OPENROUTER_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-          "HTTP-Referer":
-            process.env.OPENROUTER_SITE_URL || "https://trippick.vercel.app",
-          "X-Title": process.env.OPENROUTER_SITE_NAME || "TripPick",
-        },
-        body: JSON.stringify({
-          model,
-          temperature: options.temperature ?? 0.2,
-          response_format: { type: "json_object" },
-          messages: [
-            { role: "system", content: options.systemPrompt },
-            { role: "user", content: options.userPrompt },
-          ],
-        }),
-      });
-
-      if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        throw new LLMError(
-          `OpenRouter HTTP ${res.status}: ${text.slice(0, 200)}`,
-          "network"
-        );
-      }
-
-      const data = (await res.json()) as {
-        choices?: Array<{ message?: { content?: string } }>;
-      };
-      const raw = data?.choices?.[0]?.message?.content;
-      if (!raw) {
-        throw new LLMError("LLM 返回空内容", "empty");
-      }
+      // 优先用 Gemini，限流/失败时下一次重试自动切到 OpenRouter
+      const useGemini = hasGemini && (attempt === 1 || !hasOpenRouter);
+      const raw = useGemini
+        ? await callGemini(options.systemPrompt, options.userPrompt, temperature)
+        : await callOpenRouter(
+            options.systemPrompt,
+            options.userPrompt,
+            temperature
+          );
 
       const cleaned = stripFences(raw);
       let parsed: unknown;
@@ -120,8 +189,11 @@ export async function callLLM<S extends ZodType>(
       return validated.data as z.output<S>;
     } catch (e) {
       lastErr = e;
+      console.error(
+        `[llm:${options.tag || "?"}] attempt ${attempt} failed:`,
+        (e as Error).message?.slice(0, 200)
+      );
       if (attempt < MAX_RETRIES) {
-        // 简单线性 backoff
         await new Promise((r) => setTimeout(r, 600 * attempt));
         continue;
       }

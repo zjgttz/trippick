@@ -22,7 +22,8 @@ import {
 import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+// Vercel Hobby 上限为 300 秒；免费 LLM 两次调用总耗时可能 30~90s
+export const maxDuration = 300;
 
 const RequestSchema = z.object({
   notes: z
