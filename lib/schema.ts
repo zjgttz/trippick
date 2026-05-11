@@ -4,6 +4,10 @@ import { z } from "zod";
 export const POITypeEnum = z.enum(["景点", "餐厅", "住宿", "交通", "其他"]);
 export type POIType = z.infer<typeof POITypeEnum>;
 
+// v2.0 source: 区分 POI 是从用户笔记抽取的、还是 AI 补充的热门推荐
+export const POISourceEnum = z.enum(["user_note", "ai_recommended"]);
+export type POISource = z.infer<typeof POISourceEnum>;
+
 export const POIItemSchema = z.object({
   name: z.string().min(1),
   type: POITypeEnum,
@@ -14,6 +18,7 @@ export const POIItemSchema = z.object({
   estimated_budget: z.string().default(""),
   suggested_time: z.string().default(""),
   confidence_score: z.number().int().min(0).max(100),
+  source: POISourceEnum.default("user_note"),
 });
 export type POIItem = z.output<typeof POIItemSchema>;
 

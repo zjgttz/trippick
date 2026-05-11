@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useTripPickStore, getAcceptedItems } from "@/lib/store";
-import type { AnalysisResult, POIType } from "@/lib/schema";
+import type { AnalysisResult, POIItem, POIType } from "@/lib/schema";
 import { POICard } from "@/components/POICard";
 import { ConflictBanner } from "@/components/ConflictBanner";
 
@@ -48,6 +48,41 @@ function AnalyzeInner() {
   const decisions = useTripPickStore((s) => s.decisions);
 
   const [loadingDemo, setLoadingDemo] = useState(false);
+  const [enriching, setEnriching] = useState(false);
+  const [enrichedItems, setEnrichedItems] = useState<POIItem[]>([]);
+
+  // v2.0: POI 数量偶少时异步调用 enrich 接口补充
+  useEffect(() => {
+    if (
+      !analysis ||
+      analysis.is_mock ||
+      analysis.items.length >= 6 ||
+      enrichedItems.length > 0 ||
+      enriching
+    )
+      return;
+    setEnriching(true);
+    const existing = analysis.items.map((i) => i.name);
+    fetch("/api/enrich", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        destination: analysis.destination,
+        existing_names: existing,
+        trip_style: analysis.trip_style,
+      }),
+    })
+      .then((r) => r.json())
+      .then((data: { ok?: boolean; items?: POIItem[] }) => {
+        if (data.ok && data.items && data.items.length > 0) {
+          setEnrichedItems(data.items);
+        }
+      })
+      .catch(() => {
+        /* 静默失败 */
+      })
+      .finally(() => setEnriching(false));
+  }, [analysis, enrichedItems.length, enriching]);
 
   // 如果没数据但是 ?demo=1，自动加载 mock
   useEffect(() => {
@@ -62,10 +97,16 @@ function AnalyzeInner() {
     }
   }, [analysis, isDemo, setAnalysis]);
 
+  // 合并原始 items + AI 补充的
+  const allItems = useMemo<POIItem[]>(() => {
+    if (!analysis) return [];
+    return [...analysis.items, ...enrichedItems];
+  }, [analysis, enrichedItems]);
+
   const grouped = useMemo(() => {
     if (!analysis) return null;
-    const g = new Map<POIType, typeof analysis.items>();
-    for (const it of analysis.items) {
+    const g = new Map<POIType, POIItem[]>();
+    for (const it of allItems) {
       const arr = g.get(it.type) ?? [];
       arr.push(it);
       g.set(it.type, arr);
@@ -74,7 +115,7 @@ function AnalyzeInner() {
       arr.sort((a, b) => b.confidence_score - a.confidence_score);
     }
     return g;
-  }, [analysis]);
+  }, [analysis, allItems]);
 
   const conflictItems = useMemo(() => {
     if (!analysis) return new Set<string>();
@@ -150,8 +191,19 @@ function AnalyzeInner() {
       <header className="mt-6">
         <div className="flex flex-wrap items-end gap-3">
           <h1 className="text-3xl font-bold tracking-tight">
-            <span className="text-brand-500">{analysis.destination}</span> · 候选 {analysis.items.length} 项
+            <span className="text-brand-500">{analysis.destination}</span> · 候选 {allItems.length} 项
           </h1>
+          {enriching && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-3 py-1 text-xs text-purple-700 ring-1 ring-purple-200">
+              <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-purple-300 border-t-purple-600" />
+              AI 正在为你补充热门推荐
+            </span>
+          )}
+          {!enriching && enrichedItems.length > 0 && (
+            <span className="rounded-full bg-purple-50 px-3 py-1 text-xs text-purple-700 ring-1 ring-purple-200">
+              ✨ 含 {enrichedItems.length} 个 AI 补充
+            </span>
+          )}
         </div>
         {analysis.trip_style.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-2">

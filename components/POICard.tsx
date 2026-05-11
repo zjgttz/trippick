@@ -77,6 +77,11 @@ export function POICard({ item, hasConflict, compact }: Props) {
                 ⚡ 有冲突
               </span>
             )}
+            {item.source === "ai_recommended" && (
+              <span className="rounded-full bg-purple-50 px-2 py-0.5 text-xs text-purple-700 ring-1 ring-purple-200">
+                ✨ AI 补充
+              </span>
+            )}
           </div>
 
           {!compact && item.recommended_reasons.length > 0 && (
