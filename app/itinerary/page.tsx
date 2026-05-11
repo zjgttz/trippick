@@ -11,6 +11,8 @@ import {
 import { TIME_SLOT_LABEL, type ItineraryDay, type TimeSlot } from "@/lib/schema";
 import { buildShareURL, readPartnerFromURL } from "@/lib/share";
 import { TripMap, type MapPOI } from "@/components/TripMap";
+import { useRealtimeSync } from "@/lib/use-realtime-sync";
+import { buildTripURL } from "@/lib/realtime-sync";
 
 const SLOTS: TimeSlot[] = ["morning", "afternoon", "evening"];
 
@@ -46,6 +48,8 @@ function ItineraryInner() {
 
   const [shareURL, setShareURL] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  // v2.0 M5: 实时同步 hook
+  const { tripId, peerCount, lastPeerUpdate } = useRealtimeSync(true);
   // v2.0 M4: tab 切换 + 地图坐标
   const [activeTab, setActiveTab] = useState<"timeline" | "map">("timeline");
   const [coords, setCoords] = useState<Record<string, { lat: number; lng: number } | null>>({});
@@ -170,7 +174,10 @@ function ItineraryInner() {
   }, [analysis, accepted]);
 
   function handleShare() {
-    const url = buildShareURL(decisions);
+    // v2.0：优先用 tripId 短链（同源多标签能实时同步），并保留 base64 fallback
+    const url = tripId
+      ? buildTripURL(tripId)
+      : buildShareURL(decisions);
     setShareURL(url);
     navigator.clipboard.writeText(url).then(
       () => {
@@ -235,6 +242,15 @@ function ItineraryInner() {
               示例数据
             </span>
           )}
+          {peerCount > 0 && (
+            <span className="flex items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700 ring-1 ring-green-200">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+              </span>
+              {peerCount} 名同行人在线
+            </span>
+          )}
           <button
             onClick={handleShare}
             className="rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-600"
@@ -271,6 +287,13 @@ function ItineraryInner() {
               复制
             </button>
           </div>
+        </div>
+      )}
+
+      {/* v2.0 M5: 伴粘状态提示 */}
+      {lastPeerUpdate && (
+        <div className="mt-3 rounded-xl bg-green-50 px-4 py-2 text-xs text-green-700 ring-1 ring-green-200">
+          ✨ 同行人刚刚更新了选择 · {formatRelativeTime(lastPeerUpdate)}
         </div>
       )}
 
@@ -504,4 +527,15 @@ function ItineraryInner() {
       </div>
     </main>
   );
+}
+
+function formatRelativeTime(ts: number): string {
+  const diff = Date.now() - ts;
+  if (diff < 5_000) return "刚刚";
+  if (diff < 60_000) return `${Math.floor(diff / 1000)} 秒前`;
+  if (diff < 3600_000) return `${Math.floor(diff / 60_000)} 分钟前`;
+  return new Date(ts).toLocaleTimeString("zh-CN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }

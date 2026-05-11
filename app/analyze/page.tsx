@@ -7,6 +7,7 @@ import { useTripPickStore, getAcceptedItems } from "@/lib/store";
 import type { AnalysisResult, POIItem, POIType } from "@/lib/schema";
 import { POICard } from "@/components/POICard";
 import { ConflictBanner } from "@/components/ConflictBanner";
+import { useRealtimeSync } from "@/lib/use-realtime-sync";
 
 const TYPE_ORDER: POIType[] = ["景点", "餐厅", "住宿", "交通", "其他"];
 
@@ -50,6 +51,8 @@ function AnalyzeInner() {
   const [loadingDemo, setLoadingDemo] = useState(false);
   const [enriching, setEnriching] = useState(false);
   const [enrichedItems, setEnrichedItems] = useState<POIItem[]>([]);
+  // v2.0 M5：同源多标签实时同步（仅在有分析结果时启用）
+  const { peerCount } = useRealtimeSync(!!analysis);
 
   // v2.0: POI 数量偶少时异步调用 enrich 接口补充
   useEffect(() => {
@@ -202,6 +205,15 @@ function AnalyzeInner() {
           {!enriching && enrichedItems.length > 0 && (
             <span className="rounded-full bg-purple-50 px-3 py-1 text-xs text-purple-700 ring-1 ring-purple-200">
               ✨ 含 {enrichedItems.length} 个 AI 补充
+            </span>
+          )}
+          {peerCount > 0 && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700 ring-1 ring-green-200">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+              </span>
+              同行人 {peerCount} 人在线
             </span>
           )}
         </div>
