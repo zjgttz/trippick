@@ -10,6 +10,7 @@ import {
 } from "@/lib/store";
 import { TIME_SLOT_LABEL, type ItineraryDay, type TimeSlot } from "@/lib/schema";
 import { buildShareURL, readPartnerFromURL } from "@/lib/share";
+import { TripMap, type MapPOI } from "@/components/TripMap";
 
 const SLOTS: TimeSlot[] = ["morning", "afternoon", "evening"];
 
@@ -45,6 +46,10 @@ function ItineraryInner() {
 
   const [shareURL, setShareURL] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  // v2.0 M4: tab 切换 + 地图坐标
+  const [activeTab, setActiveTab] = useState<"timeline" | "map">("timeline");
+  const [coords, setCoords] = useState<Record<string, { lat: number; lng: number } | null>>({});
+  const [geocodeStatus, setGeocodeStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
 
   // 协同：如果有 ?s=... 参数，把它当作"伙伴的选择"读入
   useEffect(() => {
@@ -61,6 +66,49 @@ function ItineraryInner() {
 
   const accepted = useMemo(() => getAcceptedItems(decisions), [decisions]);
   const acceptedSet = useMemo(() => new Set(accepted), [accepted]);
+
+  // 首次切到「地图」时才拉坐标，节省流量和时间
+  useEffect(() => {
+    if (activeTab !== "map") return;
+    if (!analysis || accepted.length === 0) return;
+    if (geocodeStatus !== "idle") return;
+    setGeocodeStatus("loading");
+    fetch("/api/geocode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: accepted, city: analysis.destination }),
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.ok && d.coords) {
+          setCoords(d.coords);
+          setGeocodeStatus("done");
+        } else {
+          setGeocodeStatus("error");
+        }
+      })
+      .catch(() => setGeocodeStatus("error"));
+  }, [activeTab, analysis, accepted, geocodeStatus]);
+
+  // 拼装地图 POI 数据
+  const mapPOIs: MapPOI[] = useMemo(() => {
+    if (!analysis) return [];
+    const list: MapPOI[] = [];
+    for (const name of accepted) {
+      const c = coords[name];
+      if (!c) continue;
+      const it = analysis.items.find((i) => i.name === name);
+      list.push({
+        name,
+        lat: c.lat,
+        lng: c.lng,
+        type: it?.type,
+        source: it?.source,
+        recommended_reasons: it?.recommended_reasons,
+      });
+    }
+    return list;
+  }, [analysis, accepted, coords]);
 
   // 基于已选项构建最终行程：以 AI 推荐排期为基础，剔除未选项
   const finalItinerary: ItineraryDay[] = useMemo(() => {
@@ -283,14 +331,69 @@ function ItineraryInner() {
         </section>
       )}
 
+      {/* v2.0 新增：Tab 切换 */}
+      {accepted.length > 0 && (
+        <div className="mt-6 flex gap-2 border-b border-ink-100">
+          <button
+            onClick={() => setActiveTab("timeline")}
+            className={`relative px-4 py-2 text-sm font-semibold transition ${
+              activeTab === "timeline"
+                ? "text-brand-600"
+                : "text-ink-500 hover:text-ink-900"
+            }`}
+          >
+            📅 行程视图
+            {activeTab === "timeline" && (
+              <span className="absolute bottom-0 left-2 right-2 h-0.5 rounded-t-full bg-brand-500" />
+            )}
+          </button>
+          <button
+            onClick={() => setActiveTab("map")}
+            className={`relative px-4 py-2 text-sm font-semibold transition ${
+              activeTab === "map"
+                ? "text-brand-600"
+                : "text-ink-500 hover:text-ink-900"
+            }`}
+          >
+            🗺️ 地图视图
+            {activeTab === "map" && (
+              <span className="absolute bottom-0 left-2 right-2 h-0.5 rounded-t-full bg-brand-500" />
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* v2.0 M4: 地图视图 */}
+      {activeTab === "map" && accepted.length > 0 && (
+        <section className="mt-6">
+          {geocodeStatus === "loading" && (
+            <div className="flex h-[480px] items-center justify-center rounded-2xl bg-white text-sm text-ink-500 ring-1 ring-ink-100">
+              <span className="inline-flex items-center gap-2">
+                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-brand-500/30 border-t-brand-500" />
+                正在查询 {accepted.length} 个地点的坐标，需 ~{accepted.length}s…
+              </span>
+            </div>
+          )}
+          {geocodeStatus === "error" && (
+            <div className="rounded-2xl bg-red-50 p-10 text-center text-sm text-red-600 ring-1 ring-red-100">
+              坐标查询失败，请检查网络后重试
+            </div>
+          )}
+          {geocodeStatus === "done" && (
+            <TripMap pois={mapPOIs} city={analysis.destination} />
+          )}
+        </section>
+      )}
+
       {/* 行程时间轴 */}
+      {activeTab === "timeline" && (
       <section className="mt-8 space-y-6">
         {finalItinerary.length === 0 && (
           <div className="rounded-2xl bg-white p-10 text-center text-ink-500 ring-1 ring-ink-100">
             还没有任何已确认的地点，先回去选几个 ✅
           </div>
         )}
-        {finalItinerary.map((day) => (
+        {activeTab === "timeline" && finalItinerary.map((day) => (
           <div key={day.day} className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-ink-100">
             <div className="flex items-center gap-3">
               <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-500 text-white font-bold">
@@ -355,6 +458,7 @@ function ItineraryInner() {
           </div>
         ))}
       </section>
+      )}
 
       {/* 预算汇总 */}
       {accepted.length > 0 && (
