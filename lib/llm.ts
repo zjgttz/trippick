@@ -72,6 +72,8 @@ async function callGemini(
       generationConfig: {
         temperature,
         responseMimeType: "application/json",
+        // 关闭 thinking 提速 50%+（POI 抽取/冒突判断不需要推理）
+        thinkingConfig: { thinkingBudget: 0 },
       },
     }),
   });
