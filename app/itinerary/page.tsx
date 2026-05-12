@@ -365,7 +365,8 @@ function ItineraryInner() {
   if (!analysis) {
     return (
       <main className="mx-auto min-h-screen max-w-2xl px-6 py-16 text-center">
-        <h1 className="text-2xl font-bold">还没有行程数据</h1>
+        <h1 className="text-2xl font-bold">还没有行程</h1>
+        <p className="mt-2 text-ink-700">先去决策板选几个想去的地方，或者一键用示例看看效果。</p>
         <div className="mt-6 flex justify-center gap-3">
           <Link
             href="/input"
@@ -620,7 +621,7 @@ function ItineraryInner() {
         <div ref={timelineRef} className="space-y-6 bg-white/0">
         {itineraryToShow.length === 0 && (
           <div className="rounded-2xl bg-white p-10 text-center text-ink-500 ring-1 ring-ink-100">
-            还没有任何已确认的地点，先回去选几个 ✅
+            还没选地方？回上一页点 ✅ 把想去的加进来
           </div>
         )}
         {activeTab === "timeline" && itineraryToShow.map((day) => (

@@ -149,8 +149,8 @@ function AnalyzeInner() {
   if (!analysis) {
     return (
       <main className="mx-auto min-h-screen max-w-2xl px-6 py-16 text-center">
-        <h1 className="text-2xl font-bold">还没有分析数据</h1>
-        <p className="mt-2 text-ink-700">先去输入页粘贴几篇攻略，或一键用示例数据。</p>
+        <h1 className="text-2xl font-bold">先粘几篇攻略过来</h1>
+        <p className="mt-2 text-ink-700">把你收藏的小红书笔记粘过来，我帮你整理重点。没现成数据也可以一键用示例。</p>
         <div className="mt-6 flex justify-center gap-3">
           <Link
             href="/input"
