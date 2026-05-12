@@ -46,7 +46,7 @@ export default function Home() {
             <p className="mt-5 text-base text-ink-700 md:text-lg leading-relaxed">
               不是 AI 帮你生成标准行程——而是从你已经喜欢的攻略里，帮你做决定。
               <br className="hidden md:block" />
-              多篇笔记 → 自动提取 → 去重聚合 → 冲突检测 → 一键确认。
+              多篇笔记 → 自动提取 → 去重聚合 → 需注意提醒 → 一键确认。
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -82,28 +82,28 @@ export default function Home() {
               </div>
               <div className="mt-5 space-y-3">
                 <div className="rounded-2xl bg-brand-50/60 p-4 ring-1 ring-brand-100">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold">法喜寺</span>
-                    <span className="rounded-full bg-brand-500 px-2 py-0.5 text-xs text-white">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="min-w-0 truncate font-semibold">法喜寺</span>
+                    <span className="shrink-0 whitespace-nowrap rounded-full bg-brand-500 px-2 py-0.5 text-xs text-white">
                       推荐 86
                     </span>
                   </div>
                   <div className="mt-2 text-xs text-ink-700">被 3 篇笔记反复推荐 · 拍照好看 / 氛围安静</div>
                 </div>
                 <div className="rounded-2xl bg-white p-4 ring-1 ring-ink-100">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold">良渚文化村</span>
-                    <span className="rounded-full bg-warn-distance/10 px-2 py-0.5 text-xs text-warn-distance">
-                      🗺️ 距离冲突
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="min-w-0 truncate font-semibold">良渚文化村</span>
+                    <span className="shrink-0 whitespace-nowrap rounded-full bg-warn-distance/10 px-2 py-0.5 text-xs text-warn-distance">
+                      🗺️ 距离较远
                     </span>
                   </div>
                   <div className="mt-2 text-xs text-ink-700">与法喜寺相距约 30km，不建议同一天上午</div>
                 </div>
                 <div className="rounded-2xl bg-white p-4 ring-1 ring-ink-100">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold">某网红咖啡店</span>
-                    <span className="rounded-full bg-warn-opinion/10 px-2 py-0.5 text-xs text-warn-opinion">
-                      ⚠️ 评价分歧
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="min-w-0 truncate font-semibold">某网红咖啡店</span>
+                    <span className="shrink-0 whitespace-nowrap rounded-full bg-warn-opinion/10 px-2 py-0.5 text-xs text-warn-opinion">
+                      ⚠️ 口碑分歧
                     </span>
                   </div>
                   <div className="mt-2 text-xs text-ink-700">3 篇推荐 / 1 篇明确避雷，性价比一般</div>
@@ -134,7 +134,7 @@ export default function Home() {
             {
               step: "03",
               title: "做出决定",
-              desc: "冲突标记 + 候选决策板，一键确认，自动排成 Day 1 / Day 2。",
+              desc: "提醒标记 + 候选决策板，一键确认，自动排成 Day 1 / Day 2。",
             },
           ].map((it) => (
             <div

@@ -3,6 +3,7 @@
 import type { POIItem } from "@/lib/schema";
 import { ConfidenceRing } from "./ConfidenceRing";
 import { useTripPickStore, type DecisionStatus } from "@/lib/store";
+import { buildXhsSearchUrl } from "@/lib/xhs-link";
 
 interface Props {
   item: POIItem;
@@ -45,6 +46,7 @@ export function POICard({ item, hasConflict, compact }: Props) {
     (s) => s.decisions[item.name] ?? "unset"
   );
   const setDecision = useTripPickStore((s) => s.setDecision);
+  const destination = useTripPickStore((s) => s.analysis?.destination);
 
   return (
     <div
@@ -67,12 +69,17 @@ export function POICard({ item, hasConflict, compact }: Props) {
             </span>
             {item.source_count >= 2 && (
               <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-600">
-                {item.source_count} 篇推荐
+                {item.source_count} 篇笔记提到
               </span>
             )}
             {hasConflict && (
               <span className="rounded-full bg-warn-distance/10 px-2 py-0.5 text-xs text-warn-distance">
-                ⚡ 有冲突
+                ⚡ 需注意
+              </span>
+            )}
+            {item.source === "ai_recommended" && (
+              <span className="rounded-full bg-purple-50 px-2 py-0.5 text-xs text-purple-700 ring-1 ring-purple-200">
+                ✨ AI 补充
               </span>
             )}
           </div>
@@ -134,6 +141,18 @@ export function POICard({ item, hasConflict, compact }: Props) {
           );
         })}
       </div>
+
+      {/* v2.0 新增：在小红书中查看更多 */}
+      {!compact && (
+        <a
+          href={buildXhsSearchUrl(item.name, destination)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-2 inline-flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700 hover:underline"
+        >
+          在小红书查看更多说明 <span aria-hidden>↗</span>
+        </a>
+      )}
     </div>
   );
 }

@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useTripPickStore, getAcceptedItems } from "@/lib/store";
-import type { AnalysisResult, POIType } from "@/lib/schema";
+import type { AnalysisResult, POIItem, POIType } from "@/lib/schema";
 import { POICard } from "@/components/POICard";
 import { ConflictBanner } from "@/components/ConflictBanner";
+import { useRealtimeSync } from "@/lib/use-realtime-sync";
 
 const TYPE_ORDER: POIType[] = ["景点", "餐厅", "住宿", "交通", "其他"];
 
@@ -48,6 +49,44 @@ function AnalyzeInner() {
   const decisions = useTripPickStore((s) => s.decisions);
 
   const [loadingDemo, setLoadingDemo] = useState(false);
+  const [enriching, setEnriching] = useState(false);
+  const [enrichedItems, setEnrichedItems] = useState<POIItem[]>([]);
+  // v2.0: 默认不启用多人同步。仅当 URL 中明确是分享链接进来时启用。
+  const fromShare = search.get("from") === "share";
+  const { peerCount } = useRealtimeSync(!!analysis && fromShare);
+
+  // v2.0: POI 数量偶少时异步调用 enrich 接口补充
+  useEffect(() => {
+    if (
+      !analysis ||
+      analysis.is_mock ||
+      analysis.items.length >= 6 ||
+      enrichedItems.length > 0 ||
+      enriching
+    )
+      return;
+    setEnriching(true);
+    const existing = analysis.items.map((i) => i.name);
+    fetch("/api/enrich", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        destination: analysis.destination,
+        existing_names: existing,
+        trip_style: analysis.trip_style,
+      }),
+    })
+      .then((r) => r.json())
+      .then((data: { ok?: boolean; items?: POIItem[] }) => {
+        if (data.ok && data.items && data.items.length > 0) {
+          setEnrichedItems(data.items);
+        }
+      })
+      .catch(() => {
+        /* 静默失败 */
+      })
+      .finally(() => setEnriching(false));
+  }, [analysis, enrichedItems.length, enriching]);
 
   // 如果没数据但是 ?demo=1，自动加载 mock
   useEffect(() => {
@@ -62,10 +101,16 @@ function AnalyzeInner() {
     }
   }, [analysis, isDemo, setAnalysis]);
 
+  // 合并原始 items + AI 补充的
+  const allItems = useMemo<POIItem[]>(() => {
+    if (!analysis) return [];
+    return [...analysis.items, ...enrichedItems];
+  }, [analysis, enrichedItems]);
+
   const grouped = useMemo(() => {
     if (!analysis) return null;
-    const g = new Map<POIType, typeof analysis.items>();
-    for (const it of analysis.items) {
+    const g = new Map<POIType, POIItem[]>();
+    for (const it of allItems) {
       const arr = g.get(it.type) ?? [];
       arr.push(it);
       g.set(it.type, arr);
@@ -74,7 +119,7 @@ function AnalyzeInner() {
       arr.sort((a, b) => b.confidence_score - a.confidence_score);
     }
     return g;
-  }, [analysis]);
+  }, [analysis, allItems]);
 
   const conflictItems = useMemo(() => {
     if (!analysis) return new Set<string>();
@@ -150,8 +195,28 @@ function AnalyzeInner() {
       <header className="mt-6">
         <div className="flex flex-wrap items-end gap-3">
           <h1 className="text-3xl font-bold tracking-tight">
-            <span className="text-brand-500">{analysis.destination}</span> · 候选 {analysis.items.length} 项
+            <span className="text-brand-500">{analysis.destination}</span> · 候选 {allItems.length} 项
           </h1>
+          {enriching && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-3 py-1 text-xs text-purple-700 ring-1 ring-purple-200">
+              <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-purple-300 border-t-purple-600" />
+              AI 正在为你补充热门推荐
+            </span>
+          )}
+          {!enriching && enrichedItems.length > 0 && (
+            <span className="rounded-full bg-purple-50 px-3 py-1 text-xs text-purple-700 ring-1 ring-purple-200">
+              ✨ 含 {enrichedItems.length} 个 AI 补充
+            </span>
+          )}
+          {peerCount > 0 && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700 ring-1 ring-green-200">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+              </span>
+              同行人 {peerCount} 人在线
+            </span>
+          )}
         </div>
         {analysis.trip_style.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-2">
@@ -167,58 +232,133 @@ function AnalyzeInner() {
         )}
       </header>
 
+      {/* v2.0 修复: Fallback 显眼警告 — 用户必须知道这不是真的 AI 分析 */}
+      {isFallback && (
+        <section className="mt-6 rounded-2xl border-2 border-amber-300 bg-amber-50 p-4 sm:p-5">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl" aria-hidden>⚠️</span>
+            <div className="flex-1">
+              <h3 className="text-base font-bold text-amber-900">
+                AI 没能成功分析你的笔记
+              </h3>
+              <p className="mt-1 text-sm text-amber-800">
+                下面展示的是<span className="font-semibold">演示样本数据</span>，不是基于你刚才粘贴的内容生成的。可能原因：AI 调用超时、配额暂时不可用、或网络波动。
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Link
+                  href="/input"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-700"
+                >
+                  ↻ 回到输入页重试
+                </Link>
+                <span className="text-xs text-amber-700 self-center">
+                  （或继续浏览下方示例，体验完整功能）
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* 冲突 Banner */}
       <section className="mt-6">
         <ConflictBanner conflicts={analysis.conflicts} />
       </section>
 
-      {/* POI 分组卡片 */}
+      {/* 推荐地点分组卡片：推荐度 <70 的默认收起 */}
       <section className="mt-8 space-y-8">
         {TYPE_ORDER.map((t) => {
           const arr = grouped?.get(t);
           if (!arr || arr.length === 0) return null;
           const meta = TYPE_META[t];
           return (
-            <div key={t}>
-              <h2 className="flex items-center gap-2 text-lg font-semibold">
-                <span>{meta.icon}</span>
-                <span>{meta.label}</span>
-                <span className="text-sm font-normal text-ink-500">
-                  · {arr.length} 项
-                </span>
-              </h2>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {arr.map((it) => (
-                  <POICard
-                    key={it.name}
-                    item={it}
-                    hasConflict={conflictItems.has(it.name)}
-                  />
-                ))}
-              </div>
-            </div>
+            <POIGroupSection
+              key={t}
+              type={t}
+              icon={meta.icon}
+              label={meta.label}
+              items={arr}
+              conflictItems={conflictItems}
+            />
           );
         })}
       </section>
 
       {/* 浮动行动条 */}
       <div className="fixed inset-x-0 bottom-0 z-10 border-t border-ink-100 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
-          <div className="text-sm">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4">
+          <div className="min-w-0 flex-1 text-sm">
             已选 <span className="text-lg font-bold text-brand-500">{acceptedCount}</span> 项
             {acceptedCount === 0 && (
-              <span className="ml-2 text-xs text-ink-500">点 ✅ 把想去的地方加进行程</span>
+              <span className="ml-2 hidden text-xs text-ink-500 sm:inline">点 ✅ 把想去的地方加进行程</span>
             )}
           </div>
           <button
             onClick={() => router.push("/itinerary")}
             disabled={acceptedCount === 0}
-            className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 sm:px-6 sm:py-3"
           >
-            生成我的行程 <span aria-hidden>→</span>
+            生成行程 <span aria-hidden>→</span>
           </button>
         </div>
       </div>
     </main>
+  );
+}
+
+// 一个分组区域：推荐度≥0 默认展示，<70 默认收起
+const LOW_THRESHOLD = 70;
+
+function POIGroupSection({
+  type: _type,
+  icon,
+  label,
+  items,
+  conflictItems,
+}: {
+  type: POIType;
+  icon: string;
+  label: string;
+  items: POIItem[];
+  conflictItems: Set<string>;
+}) {
+  const [showLow, setShowLow] = useState(false);
+  const highItems = items.filter((it) => it.confidence_score >= LOW_THRESHOLD);
+  const lowItems = items.filter((it) => it.confidence_score < LOW_THRESHOLD);
+  // 如果所有地点都是低推荐度，首屏至少要有东西：那就默认全展
+  const allLow = highItems.length === 0 && lowItems.length > 0;
+  const visibleItems = allLow || showLow ? items : highItems;
+  const hiddenCount = allLow ? 0 : lowItems.length;
+
+  return (
+    <div>
+      <h2 className="flex items-center gap-2 text-lg font-semibold">
+        <span>{icon}</span>
+        <span>{label}</span>
+        <span className="text-sm font-normal text-ink-500">
+          · {items.length} 个
+        </span>
+      </h2>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {visibleItems.map((it) => (
+          <POICard
+            key={it.name}
+            item={it}
+            hasConflict={conflictItems.has(it.name)}
+          />
+        ))}
+      </div>
+      {hiddenCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowLow((v) => !v)}
+          className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-xs text-ink-700 ring-1 ring-ink-200 transition hover:ring-brand-300 hover:text-brand-600"
+        >
+          {showLow
+            ? `收起低热度备选 ↑`
+            : `显示其他 ${hiddenCount} 个低热度备选 ↓`}
+        </button>
+      )}
+    </div>
   );
 }
