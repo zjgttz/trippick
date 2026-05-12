@@ -84,6 +84,39 @@ function buildNameCandidates(name: string): string[] {
     candidates.add(enParen[2]!.trim());
     candidates.add(enParen[1]!.trim());
   }
+  // 【长名创衰】去掉常见尾缀，OSM 对“良渚文化遗址公园”这种长名收录差，“良渚”能查到
+  const SUFFIX_PATTERNS = [
+    /文化遗址公园$/,
+    /遗址公园$/,
+    /考古遗址公园$/,
+    /国家考古遗址公园$/,
+    /湿地公园$/,
+    /森林公园$/,
+    /生态公园$/,
+    /郊野公园$/,
+    /主题公园$/,
+    /风景区$/,
+    /风景名胜区$/,
+    /景区$/,
+    /古镇$/,
+    /古城$/,
+    /古街$/,
+    /古村$/,
+    /商业街$/,
+    /步行街$/,
+    /名人故居$/,
+    /故居$/,
+    /博物馆$/,
+    /纪念馆$/,
+    /美术馆$/,
+    /艺术馆$/,
+  ];
+  for (const pat of SUFFIX_PATTERNS) {
+    const trimmed = name.replace(pat, "").trim();
+    if (trimmed && trimmed !== name && trimmed.length >= 2) {
+      candidates.add(trimmed);
+    }
+  }
   return Array.from(candidates);
 }
 
