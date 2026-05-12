@@ -57,6 +57,13 @@ function ItineraryInner() {
     { day: number; time_slot: TimeSlot } | null
   >(null);
   const [addName, setAddName] = useState("");
+  // v2.0: 拖动状态
+  type DragSrc = { day: number; time_slot: TimeSlot; name: string };
+  type DropTarget =
+    | { kind: "item"; day: number; time_slot: TimeSlot; name: string; pos: "before" | "after" }
+    | { kind: "slot-end"; day: number; time_slot: TimeSlot };
+  const [dragSrc, setDragSrc] = useState<DragSrc | null>(null);
+  const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
   // v2.0: 默认不启动多人同步。点「邀请同行人」或从分享链接进入时才启动。
   const [coopEnabled, setCoopEnabled] = useState(false);
   const { tripId, peerCount, lastPeerUpdate } = useRealtimeSync(coopEnabled);
@@ -211,6 +218,70 @@ function ItineraryInner() {
     setCustomItinerary(null);
   }
 
+  function handleDrop() {
+    if (!dragSrc || !dropTarget) {
+      setDragSrc(null);
+      setDropTarget(null);
+      return;
+    }
+    // 拖到自己头上：什么都不做
+    if (
+      dropTarget.kind === "item" &&
+      dropTarget.day === dragSrc.day &&
+      dropTarget.time_slot === dragSrc.time_slot &&
+      dropTarget.name === dragSrc.name
+    ) {
+      setDragSrc(null);
+      setDropTarget(null);
+      return;
+    }
+
+    const next = cloneItinerary(itineraryToShow);
+
+    // 1) 从源位置移除
+    const srcDay = next.find((d) => d.day === dragSrc.day);
+    const srcSlot = srcDay?.slots.find((s) => s.time_slot === dragSrc.time_slot);
+    if (!srcSlot) {
+      setDragSrc(null);
+      setDropTarget(null);
+      return;
+    }
+    srcSlot.items = srcSlot.items.filter((n) => n !== dragSrc.name);
+
+    // 2) 定位目标 day/slot（拖跨天时可能需要创建 Day）
+    let dstDay = next.find((d) => d.day === dropTarget.day);
+    if (!dstDay) {
+      dstDay = {
+        day: dropTarget.day,
+        slots: SLOTS.map((s) => ({ time_slot: s, items: [], note: "" })),
+      };
+      next.push(dstDay);
+      next.sort((a, b) => a.day - b.day);
+    }
+    let dstSlot = dstDay.slots.find((s) => s.time_slot === dropTarget.time_slot);
+    if (!dstSlot) {
+      dstSlot = { time_slot: dropTarget.time_slot, items: [], note: "" };
+      dstDay.slots.push(dstSlot);
+    }
+
+    // 3) 插入到目标位置
+    if (dropTarget.kind === "slot-end") {
+      dstSlot.items.push(dragSrc.name);
+    } else {
+      const idx = dstSlot.items.indexOf(dropTarget.name);
+      if (idx === -1) {
+        dstSlot.items.push(dragSrc.name);
+      } else {
+        const insertAt = dropTarget.pos === "before" ? idx : idx + 1;
+        dstSlot.items.splice(insertAt, 0, dragSrc.name);
+      }
+    }
+
+    setCustomItinerary(next);
+    setDragSrc(null);
+    setDropTarget(null);
+  }
+
   async function handleExportImage() {
     if (!timelineRef.current) return;
     setExporting(true);
@@ -264,24 +335,6 @@ function ItineraryInner() {
     }
     return list;
   }, [analysis, accepted, coords, itineraryToShow]);
-
-  // 预算汇总（粗略：把 estimated_budget 里第一个数字累加）
-  const budget = useMemo(() => {
-    if (!analysis) return { total: 0, hasUnknown: false };
-    let total = 0;
-    let hasUnknown = false;
-    for (const name of accepted) {
-      const it = analysis.items.find((i) => i.name === name);
-      if (!it || !it.estimated_budget) {
-        hasUnknown = true;
-        continue;
-      }
-      const m = it.estimated_budget.match(/(\d+)/);
-      if (m) total += parseInt(m[1]!, 10);
-      else hasUnknown = true;
-    }
-    return { total, hasUnknown };
-  }, [analysis, accepted]);
 
   function handleShare() {
     // 点击邀请按钮 → 启动同步。hook 里会创建或复用 tripId。
@@ -532,7 +585,7 @@ function ItineraryInner() {
                   已手动调整
                 </span>
               ) : (
-                <span>点击条目右上角 ✕ 可删除，或点 “+ 添加” 插入自定义条目（如高铁、机场大巴）</span>
+<span>👆 拖拽条目可重排顺序 · 右上角 ✕ 删除 · 点 “+ 添加” 插入自定义条目（如高铁、机场大巴）</span>
               )}
             </div>
             <div className="flex gap-2">
@@ -578,20 +631,113 @@ function ItineraryInner() {
                     note: "",
                   };
                 const hasItems = slot.items.length > 0;
+                const isDropSlotEnd =
+                  dropTarget?.kind === "slot-end" &&
+                  dropTarget.day === day.day &&
+                  dropTarget.time_slot === slot.time_slot;
                 return (
                   <div key={slot.time_slot} className="flex gap-4">
                     <div className="w-16 shrink-0 text-xs font-semibold text-ink-500">
                       {TIME_SLOT_LABEL[slot.time_slot]}
                     </div>
-                    <div className="flex-1 space-y-2">
+                    <div
+                      className={`flex-1 space-y-2 rounded-lg p-1 transition ${
+                        isDropSlotEnd ? "bg-brand-50 ring-2 ring-brand-300" : ""
+                      }`}
+                      onDragOver={(e) => {
+                        // 只有拖到空 slot 或 slot 底部（不是某个 item）才走这里
+                        if (!dragSrc) return;
+                        // 仅在未有更精确的 item 目标时才用 slot-end
+                        if (slot.items.length === 0) {
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = "move";
+                          setDropTarget({
+                            kind: "slot-end",
+                            day: day.day,
+                            time_slot: slot.time_slot,
+                          });
+                        }
+                      }}
+                      onDrop={(e) => {
+                        if (!dragSrc) return;
+                        e.preventDefault();
+                        // 如果子元素已接管，这里只处理空 slot drop
+                        if (slot.items.length === 0) {
+                          setDropTarget({
+                            kind: "slot-end",
+                            day: day.day,
+                            time_slot: slot.time_slot,
+                          });
+                          handleDrop();
+                        }
+                      }}
+                    >
                       {slot.items.map((n) => {
                         const it = analysis.items.find((i) => i.name === n);
                         const partnerWants =
                           partnerDecisions?.[n] === "accepted";
+                        const isDragging =
+                          dragSrc?.day === day.day &&
+                          dragSrc?.time_slot === slot.time_slot &&
+                          dragSrc?.name === n;
+                        const isDropBefore =
+                          dropTarget?.kind === "item" &&
+                          dropTarget.day === day.day &&
+                          dropTarget.time_slot === slot.time_slot &&
+                          dropTarget.name === n &&
+                          dropTarget.pos === "before";
+                        const isDropAfter =
+                          dropTarget?.kind === "item" &&
+                          dropTarget.day === day.day &&
+                          dropTarget.time_slot === slot.time_slot &&
+                          dropTarget.name === n &&
+                          dropTarget.pos === "after";
                         return (
+                          <div key={n} className="relative">
+                            {isDropBefore && (
+                              <div className="absolute -top-1 left-0 right-0 z-10 h-0.5 rounded-full bg-brand-500" />
+                            )}
+                            {isDropAfter && (
+                              <div className="absolute -bottom-1 left-0 right-0 z-10 h-0.5 rounded-full bg-brand-500" />
+                            )}
                           <div
-                            key={n}
-                            className="group relative rounded-xl bg-ink-100/40 p-3 pr-9 ring-1 ring-ink-100"
+                            draggable={!exporting}
+                            onDragStart={(e) => {
+                              e.dataTransfer.effectAllowed = "move";
+                              setDragSrc({
+                                day: day.day,
+                                time_slot: slot.time_slot,
+                                name: n,
+                              });
+                            }}
+                            onDragOver={(e) => {
+                              if (!dragSrc) return;
+                              e.preventDefault();
+                              e.dataTransfer.dropEffect = "move";
+                              const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                              const pos =
+                                e.clientY < r.top + r.height / 2
+                                  ? "before"
+                                  : "after";
+                              setDropTarget({
+                                kind: "item",
+                                day: day.day,
+                                time_slot: slot.time_slot,
+                                name: n,
+                                pos,
+                              });
+                            }}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              handleDrop();
+                            }}
+                            onDragEnd={() => {
+                              setDragSrc(null);
+                              setDropTarget(null);
+                            }}
+                            className={`group relative rounded-xl bg-ink-100/40 p-3 pr-9 ring-1 ring-ink-100 ${
+                              exporting ? "" : "cursor-grab active:cursor-grabbing"
+                            } ${isDragging ? "opacity-40" : ""}`}
                           >
                             {!exporting && (
                               <button
@@ -603,6 +749,15 @@ function ItineraryInner() {
                               >
                                 ✕
                               </button>
+                            )}
+                            {!exporting && (
+                              <span
+                                aria-hidden
+                                className="absolute left-1 top-1/2 -translate-y-1/2 select-none text-ink-300 opacity-0 transition group-hover:opacity-100"
+                                title="拖动重排"
+                              >
+                                ⋮⋮
+                              </span>
                             )}
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="font-semibold">{n}</span>
@@ -626,11 +781,17 @@ function ItineraryInner() {
                                 {it.recommended_reasons.slice(0, 3).join(" · ")}
                               </div>
                             )}
+                            {it && it.estimated_budget && (
+                              <div className="mt-1 text-xs text-ink-700">
+                                💰 {it.estimated_budget}
+                              </div>
+                            )}
                             {it && it.warnings.length > 0 && (
                               <div className="mt-1 text-xs text-warn-distance">
                                 ⚠️ {it.warnings.join(" · ")}
                               </div>
                             )}
+                          </div>
                           </div>
                         );
                       })}
@@ -781,27 +942,10 @@ function ItineraryInner() {
         </div>
       )}
 
-      {/* 预算汇总 */}
+      {/* 行程概要（已选 N 项 / 共 N 天） */}
       {accepted.length > 0 && (
-        <section className="mt-6 rounded-2xl bg-gradient-to-br from-brand-50 to-accent-50 p-5 ring-1 ring-brand-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-sm text-ink-700">预算粗估（不含交通到达）</div>
-              <div className="mt-1 text-3xl font-bold text-brand-600">
-                约 ¥{budget.total}
-                {budget.hasUnknown && (
-                  <span className="ml-2 align-middle text-xs font-normal text-ink-500">
-                    部分项目未标注价格
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="text-right text-xs text-ink-500">
-              已选 {accepted.length} 项
-              <br />
-              共 {itineraryToShow.length} 天
-            </div>
-          </div>
+        <section className="mt-6 rounded-2xl bg-gradient-to-br from-brand-50 to-accent-50 px-5 py-3 text-xs text-ink-700 ring-1 ring-brand-100">
+          已选 <span className="font-semibold text-brand-600">{accepted.length}</span> 项 · 共 <span className="font-semibold text-brand-600">{itineraryToShow.length}</span> 天
         </section>
       )}
 

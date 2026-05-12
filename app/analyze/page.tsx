@@ -265,7 +265,7 @@ function AnalyzeInner() {
         <ConflictBanner conflicts={analysis.conflicts} />
       </section>
 
-      {/* 推荐地点分组卡片：推荐度 <60 的默认收起 */}
+      {/* 推荐地点分组卡片：推荐度 <70 的默认收起 */}
       <section className="mt-8 space-y-8">
         {TYPE_ORDER.map((t) => {
           const arr = grouped?.get(t);
@@ -306,8 +306,8 @@ function AnalyzeInner() {
   );
 }
 
-// 一个分组区域：推荐度≥0 默认展示，<60 默认收起
-const LOW_THRESHOLD = 60;
+// 一个分组区域：推荐度≥0 默认展示，<70 默认收起
+const LOW_THRESHOLD = 70;
 
 function POIGroupSection({
   type: _type,
