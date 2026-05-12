@@ -148,29 +148,45 @@ export default function InputPage() {
         body: JSON.stringify({ notes: cleaned, preferences }),
       });
 
-      const body = await res.json();
+      // 先拿文本，再尝试 JSON。这样 Vercel Edge 返回纯文本错误页时不会炸出 Unexpected token。
+      const rawText = await res.text();
+      let body: any = null;
+      try {
+        body = rawText ? JSON.parse(rawText) : null;
+      } catch {
+        // 服务端返了非 JSON（常见于 504 函数超时、Vercel Edge 拦截、Cold-start 抛错）
+        if (res.status === 504 || /timeout/i.test(rawText)) {
+          setError("AI 分析超时了（超过 60 秒），请减少笔记数量后重试。");
+        } else if (res.status >= 500) {
+          setError(`服务临时不可用（HTTP ${res.status}），请稍候重试。如果刚刚连续点过多次，等 1-2 分钟再试。`);
+        } else {
+          setError(`请求异常（HTTP ${res.status}），请重试。`);
+        }
+        setLoading(false);
+        return;
+      }
 
       // 速率限制
       if (res.status === 429) {
-        setError(body.message || "请求过于频繁，请稍后再试");
+        setError(body?.message || "请求过于频繁，请稍后再试");
         setLoading(false);
         return;
       }
       // 校验失败
       if (res.status === 400) {
-        setError(body.message || "参数有误");
+        setError(body?.message || "参数有误");
         setLoading(false);
         return;
       }
 
-      if (body.ok && body.data) {
+      if (body?.ok && body?.data) {
         setAnalysis(body.data as AnalysisResult);
         router.push("/analyze");
         return;
       }
 
       // LLM 失败 → 走 mock fallback
-      if (body.should_fallback) {
+      if (body?.should_fallback) {
         const mockRes = await fetch("/mock-result.json");
         const mock = (await mockRes.json()) as AnalysisResult;
         setAnalysis({ ...mock, is_mock: true });

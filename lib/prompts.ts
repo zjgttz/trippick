@@ -107,9 +107,15 @@ conflict_type 仅取：
 每个 conflict 含 items(名取自 items.name)、reason、suggestion。
 
 【itinerary_suggestion 排期】
-若用户偏好里指定了行程时长（X 天），则 itinerary_suggestion 必须严格输出 X 个 day，不多不少；未指定时按 items 数量判断（≤6 一天，7-12 两天，更多三天）。
-同日地理就近；高 confidence 排 morning/afternoon；餐厅放用餐时段；每 slot 1-3 项；note 给实用建议。
-slot.items 中的地点名必须来自 items.name。天数超过 2 时，可允许同一地点在不同天不同时段重复出现作为备选。
+若用户偏好里指定了行程时长（X 天），则 itinerary_suggestion 必须输出 X 个 day；未指定时按 items 数量判断（≤6 一天，7-12 两天，更多三天）。
+同日地理就近；高 confidence 排 morning/afternoon；餐厅放用餐时段；每 slot 0-3 项。
+
+【硬约束（绝不违反）】
+1. slot.items 中的每一个名字必须是 items[].name 中出现过的字符串，一个字都不能不同。
+2. 严禁在 note 里推荐任何 items 名册以外的地点、餐厅、活动名称（如“某某码头”、“某某街”、“某某店”）。违反会让用户误以为是他选过的内容。
+3. note 只能写：“出发时间 / 交通提示 / 预订提醒 / 天气注意事项 / 衡量 items 中已有地点的顺序”这类纯提示，不加新地点。如果没有这种纯提示可写，note = "" 即可。
+4. 如果 items 不够填满 X 天：可以让某些 slot 的 items = []、note = ""；也可以让同一个 items 在不同天重复出现作为备选。宁可留空，切勿编造。
+5. 除非用户偏好明确要求 X 天且 items 够用，否则不要超过 items 能支撑的天数。
 
 严格 JSON 输出，无 markdown 无解释。`;
 

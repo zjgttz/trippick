@@ -795,7 +795,8 @@ function ItineraryInner() {
                           </div>
                         );
                       })}
-                      {slot.note && (
+                      {/* 只在 slot 有实际条目时才显示 note，避免 LLM 在空 slot 里编造「隐形推荐」 */}
+                      {slot.note && slot.items.length > 0 && (
                         <div className="rounded-lg bg-accent-50/60 px-3 py-1.5 text-xs leading-relaxed text-ink-700 ring-1 ring-accent-100">
                           💡 {slot.note}
                         </div>
