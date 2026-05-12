@@ -21,15 +21,10 @@ type 仅可取：景点/餐厅/住宿/交通/其他。
 
 严格 JSON 输出，无 markdown 无解释。`;
 
-// 精简到最小：仅展示 1 个完整 POI 字段示例，节省 ~300 tokens
-export const EXTRACT_FEW_SHOT = `输出格式（严格按此字段名）：
-{
-  "destination":"杭州",
-  "trip_style":["寺庙游","拍照"],
-  "items":[
-    {"name":"法喜寺","type":"景点","source_count":2,"recommended_reasons":["氛围好","适合拍照"],"warnings":["周末人多"],"suitable_for":["女生"],"estimated_budget":"免费","suggested_time":"上午","confidence_score":82}
-  ]
-}`;
+// 超精简：仅列字段名/类型，response_format=json_object 已保证输出为 JSON。节省 ~250 tokens
+export const EXTRACT_FEW_SHOT = `输出字段：
+destination(str), trip_style(str[]),
+items[]: name, type(景点|餐厅|住宿|交通|其他), source_count(int), recommended_reasons(str[]), warnings(str[]), suitable_for(str[]), estimated_budget(str), suggested_time(str), confidence_score(0-100)`;
 
 export function buildExtractUserPrompt(notes: string[]): string {
   const noteSection = notes

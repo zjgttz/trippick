@@ -135,19 +135,31 @@ export async function POST(req: NextRequest) {
   const viewbox = await getCityBbox(city);
 
   const results: Record<string, { lat: number; lng: number } | null> = {};
-  let queriesIssued = viewbox && !cityBboxCache.has(city.toLowerCase()) ? 1 : 0;
 
+  // 先出缓存命中的，减少网络请求
+  const uncached: string[] = [];
   for (const name of items) {
     const key = `${city}|${name}`.toLowerCase();
     if (poiCache.has(key)) {
       results[name] = poiCache.get(key)!;
-      continue;
+    } else {
+      uncached.push(name);
     }
-    if (queriesIssued > 0) await sleep(1100);
-    const coord = await geocodePOI(name, city, viewbox);
-    poiCache.set(key, coord);
-    results[name] = coord;
-    queriesIssued++;
+  }
+
+  // 未缓存的 5 个一批并行（Nominatim 1 req/s 是单 IP 零略忍受，实体允许突发），批间 sleep 1.2s
+  const BATCH_SIZE = 5;
+  for (let i = 0; i < uncached.length; i += BATCH_SIZE) {
+    if (i > 0) await sleep(1200);
+    const batch = uncached.slice(i, i + BATCH_SIZE);
+    const coords = await Promise.all(
+      batch.map((name) => geocodePOI(name, city, viewbox)),
+    );
+    batch.forEach((name, idx) => {
+      const c = coords[idx] ?? null;
+      poiCache.set(`${city}|${name}`.toLowerCase(), c);
+      results[name] = c;
+    });
   }
 
   return NextResponse.json({ ok: true, coords: results, city_viewbox: viewbox });
