@@ -232,6 +232,32 @@ function AnalyzeInner() {
         )}
       </header>
 
+      {/* v2.2 P1: 决策板顶部 Summary 卡 — 先给结果再给细节 */}
+      {!isFallback && (
+        <section className="mt-6 rounded-2xl bg-white p-4 ring-1 ring-ink-100 sm:p-5">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl" aria-hidden>📋</span>
+            <div className="flex-1 text-sm leading-relaxed text-ink-700">
+              <p>
+                从 <span className="font-bold text-ink-900">{analysis.source_titles.length || "几"}</span> 篇笔记里整理出{" "}
+                <span className="font-bold text-brand-500">{allItems.length}</span> 个候选地点
+                {(() => {
+                  const high = allItems.filter((it) => it.confidence_score >= 70).length;
+                  return high > 0 ? <>，其中 <span className="font-bold text-brand-500">{high}</span> 个被多次推荐</> : null;
+                })()}
+                {analysis.conflicts.length > 0 && (
+                  <>，发现 <span className="font-bold text-accent-600">{analysis.conflicts.length}</span> 处需要注意的地方</>
+                )}
+                。
+              </p>
+              <p className="mt-1.5 text-xs text-ink-500">
+                点 ✅ 把想去的加进行程，点 ❌ 跳过；推荐度低的已自动折叠。
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* v2.0 修复: Fallback 显眼警告 — 用户必须知道这不是真的 AI 分析 */}
       {isFallback && (
         <section className="mt-6 rounded-2xl border-2 border-amber-300 bg-amber-50 p-4 sm:p-5">
