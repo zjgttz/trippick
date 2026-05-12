@@ -34,11 +34,7 @@ export default function Home() {
       <section className="mx-auto max-w-6xl px-6 pt-12 pb-20 md:pt-20 md:pb-28">
         <div className="grid items-center gap-12 md:grid-cols-2">
           <div>
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/70 px-3 py-1 text-xs font-medium text-brand-600 ring-1 ring-brand-100 backdrop-blur">
-              <span className="h-1.5 w-1.5 rounded-full bg-brand-500" />
-              48 小时 Demo · v1.1
-            </span>
-            <h1 className="mt-5 text-4xl font-bold leading-tight tracking-tight md:text-5xl">
+            <h1 className="text-4xl font-bold leading-tight tracking-tight md:text-5xl">
               把你收藏的<span className="text-brand-500">小红书攻略</span>，
               <br className="hidden md:block" />
               拼成真正能出发的行程

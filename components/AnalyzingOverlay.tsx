@@ -10,8 +10,9 @@ const STEPS = [
   { label: "正在生成决策板", icon: "✨" },
 ];
 
-// 各步骤大致占多少秒（总和≈实际 AI 耗时 20-40s）
-const STEP_DURATIONS_MS = [3000, 8000, 5000, 5000, 6000];
+// 各步骤大致占多少秒（总和≈ 120s，实际 AI 耗时 1-2 分钟）
+// 取地点提取是最耗时的 LLM 调用，合并和冲突检测是后续轻量步骤
+const STEP_DURATIONS_MS = [8000, 60000, 18000, 18000, 16000];
 
 export default function AnalyzingOverlay({ show }: { show: boolean }) {
   const [activeStep, setActiveStep] = useState(0);
@@ -27,7 +28,7 @@ export default function AnalyzingOverlay({ show }: { show: boolean }) {
     const startTime = Date.now();
     const tickInterval = setInterval(() => {
       const ms = Date.now() - startTime;
-      setElapsed(Math.floor(ms / 1000));
+      setElapsed(ms);
 
       // 根据累计时长定位当前步骤
       let acc = 0;
@@ -55,7 +56,7 @@ export default function AnalyzingOverlay({ show }: { show: boolean }) {
           <div>
             <h2 className="text-lg font-bold text-ink-900">AI 正在分析你的攻略</h2>
             <p className="mt-0.5 text-xs text-ink-500">
-              通常需要 10–30 秒 · 已用 {elapsed}s
+              预计 1–2 分钟 · 已用 {formatElapsed(elapsed)}
             </p>
           </div>
         </div>
@@ -108,7 +109,7 @@ export default function AnalyzingOverlay({ show }: { show: boolean }) {
           })}
         </ol>
 
-        {elapsed >= 30 && (
+        {elapsed >= 120000 && (
           <p className="mt-4 rounded-xl bg-accent-50 px-3 py-2 text-xs text-ink-700 ring-1 ring-accent-200">
             稍微久了一点，AI 可能在处理较多内容，再等等就好。
           </p>
@@ -116,4 +117,13 @@ export default function AnalyzingOverlay({ show }: { show: boolean }) {
       </div>
     </div>
   );
+}
+
+// 将毫秒格式化为“X 分 Y 秒” 或 “Ys”
+function formatElapsed(ms: number): string {
+  const totalSec = Math.floor(ms / 1000);
+  const min = Math.floor(totalSec / 60);
+  const sec = totalSec % 60;
+  if (min === 0) return `${sec}s`;
+  return `${min}分 ${sec}s`;
 }

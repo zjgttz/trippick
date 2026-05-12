@@ -239,8 +239,7 @@ function AnalyzeInner() {
             <span className="text-2xl" aria-hidden>📋</span>
             <div className="flex-1 text-sm leading-relaxed text-ink-700">
               <p>
-                从 <span className="font-bold text-ink-900">{analysis.source_titles.length || "几"}</span> 篇笔记里整理出{" "}
-                <span className="font-bold text-brand-500">{allItems.length}</span> 个候选地点
+                共整理出 <span className="font-bold text-brand-500">{allItems.length}</span> 个候选地点
                 {(() => {
                   const high = allItems.filter((it) => it.confidence_score >= 70).length;
                   return high > 0 ? <>，其中 <span className="font-bold text-brand-500">{high}</span> 个被多次推荐</> : null;
