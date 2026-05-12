@@ -84,3 +84,46 @@ ${JSON.stringify(items, null, 2)}
 
 只输出 JSON。`;
 }
+
+// ============ 合并 Prompt（v2.0 性能，一次调用代替 Extract+Conflict） ============
+
+export const FULL_SYSTEM_PROMPT = `从小红书旅行笔记一次性抽取 POI、识别冲突并生成排期。
+
+输出字段：destination、trip_style(2-4个)、items[]、conflicts[]、itinerary_suggestion[]。
+
+【items 计算】
+source_count = 出现笔记数；confidence_score (0-100) = 出现频次40% + 情绪强度30% (强推+/踩雷-) + 一致性30%。
+同名或仅标点差异视为同项（"灵隐寺"="灵隐寺景区"）；recommended_reasons/warnings 并集去重。
+type枚举：景点/餐厅/住宿/交通/其他。
+
+【conflicts 识别】
+conflict_type 仅取：
+- distance: 两地距离过远不宜同日
+- opinion: warnings含"避雷/坑"且有 recommended_reasons
+- time_overload: 同时段候选>3
+- prerequisite: 需预约/季节限定/限工作日
+每个 conflict 含 items(名取自上面 items.name)、reason、suggestion。
+
+【itinerary_suggestion 排期】
+默认 2 天，items>12 可 3 天；同日地理就近；高 confidence 排 morning/afternoon；餐厅放用餐时段；每 slot 1-3 项；note 给实用建议。
+slot.items 中的地点名必须来自上面生成的 items.name。
+
+严格 JSON 输出，无 markdown 无解释。`;
+
+export const FULL_FEW_SHOT = `输出字段结构：
+destination(str), trip_style(str[]),
+items[]: name, type(枚举), source_count(int), recommended_reasons(str[]), warnings(str[]), suitable_for(str[]), estimated_budget(str), suggested_time(str), confidence_score(0-100),
+conflicts[]: conflict_type(distance|opinion|time_overload|prerequisite), items(str[]), reason(str), suggestion(str),
+itinerary_suggestion[]: day(int), slots[]: time_slot(morning|afternoon|evening), items(str[]), note(str)`;
+
+export function buildFullUserPrompt(notes: string[]): string {
+  const noteSection = notes
+    .map((n, i) => `=== 笔记${i + 1} ===\n${n.trim()}`)
+    .join("\n\n");
+  return `${FULL_FEW_SHOT}
+
+---
+现在处理下面 ${notes.length} 篇真实笔记，一次性产出上述全部 5 个字段（只输出 JSON）：
+
+${noteSection}`;
+}

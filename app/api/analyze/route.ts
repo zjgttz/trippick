@@ -1,7 +1,7 @@
 /**
  * 主 API Route：
  * - 接收用户粘贴的笔记数组
- * - 顺序调用 extract → conflicts 两次 LLM
+ * - v2.0 性能：合并为一次 LLM 调用（extract + conflicts + itinerary 一起出）
  * - 失败时返回 isFallback=true，由前端用 mock-result.json 兜底
  */
 
@@ -9,21 +9,18 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { callLLM, LLMError } from "@/lib/llm";
 import {
-  ExtractResultSchema,
-  ConflictResultSchema,
+  FullAnalysisSchema,
   type AnalysisResult,
 } from "@/lib/schema";
 import {
-  EXTRACT_SYSTEM_PROMPT,
-  buildExtractUserPrompt,
-  CONFLICTS_SYSTEM_PROMPT,
-  buildConflictsUserPrompt,
+  FULL_SYSTEM_PROMPT,
+  buildFullUserPrompt,
 } from "@/lib/prompts";
 import { checkRateLimit, getClientIP } from "@/lib/rate-limit";
 import { preferencesToPromptHint, type UserPreferences } from "@/lib/preferences";
 
 export const runtime = "nodejs";
-// Vercel Hobby 上限为 300 秒；免费 LLM 两次调用总耗时可能 30~90s
+// Vercel Hobby 上限为 300 秒；v2.0 合并为单次调用预期 15-35s
 export const maxDuration = 300;
 
 const PreferencesSchema = z
@@ -86,28 +83,20 @@ export async function POST(req: Request) {
   const prefHint = preferences ? preferencesToPromptHint(preferences as UserPreferences) : "";
 
   try {
-    // Step 1: 抽取 items (v2.0 拼接用户偏好)
-    const extract = await callLLM({
-      systemPrompt: EXTRACT_SYSTEM_PROMPT + prefHint,
-      userPrompt: buildExtractUserPrompt(notes),
-      schema: ExtractResultSchema,
-      tag: "extract",
-    });
-
-    // Step 2: 冲突 + 排期
-    const conflicts = await callLLM({
-      systemPrompt: CONFLICTS_SYSTEM_PROMPT,
-      userPrompt: buildConflictsUserPrompt(extract.destination, extract.items),
-      schema: ConflictResultSchema,
-      tag: "conflicts",
+    // v2.0 合并调用：一次 LLM 同时输出 items + conflicts + itinerary
+    const full = await callLLM({
+      systemPrompt: FULL_SYSTEM_PROMPT + prefHint,
+      userPrompt: buildFullUserPrompt(notes),
+      schema: FullAnalysisSchema,
+      tag: "full",
     });
 
     const result: AnalysisResult = {
-      destination: extract.destination,
-      trip_style: extract.trip_style ?? [],
-      items: extract.items,
-      conflicts: conflicts.conflicts ?? [],
-      itinerary_suggestion: conflicts.itinerary_suggestion ?? [],
+      destination: full.destination,
+      trip_style: full.trip_style ?? [],
+      items: full.items,
+      conflicts: full.conflicts ?? [],
+      itinerary_suggestion: full.itinerary_suggestion ?? [],
       source_titles: titles ?? [],
       generated_at: new Date().toISOString(),
       is_mock: false,

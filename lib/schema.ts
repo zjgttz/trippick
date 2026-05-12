@@ -103,6 +103,22 @@ export const ConflictResultSchema = z.object({
 });
 export type ConflictResult = z.output<typeof ConflictResultSchema>;
 
+// v2.0 性能：Extract + Conflict 合并为一次 LLM 调用，避免串行两次 30-60s
+export const FullAnalysisSchema = z.object({
+  destination: z.string().min(1),
+  trip_style: lenientStringArray(),
+  items: z.array(POIItemSchema),
+  conflicts: z.preprocess(
+    (v) => (Array.isArray(v) ? v : []),
+    z.array(ConflictSchema)
+  ) as z.ZodType<z.infer<typeof ConflictSchema>[]>,
+  itinerary_suggestion: z.preprocess(
+    (v) => (Array.isArray(v) ? v : []),
+    z.array(ItineraryDaySchema)
+  ) as z.ZodType<z.infer<typeof ItineraryDaySchema>[]>,
+});
+export type FullAnalysis = z.output<typeof FullAnalysisSchema>;
+
 // ============ 完整分析结果（前端用） ============
 // 用 output 类型，确保 default 字段都是 required
 export interface AnalysisResult {
