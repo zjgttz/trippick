@@ -10,10 +10,10 @@ import {
 } from "@/lib/store";
 import { TIME_SLOT_LABEL, type ItineraryDay, type TimeSlot } from "@/lib/schema";
 import { reorderItineraryByGeo } from "@/lib/reorder-by-geo";
-import { buildShareURL, readPartnerFromURL } from "@/lib/share";
+import { readPartnerFromURL } from "@/lib/share";
 import { TripMap, type MapPOI } from "@/components/TripMap";
 import { useRealtimeSync } from "@/lib/use-realtime-sync";
-import { buildTripURL } from "@/lib/realtime-sync";
+import { buildTripURL, getOrCreateTripId } from "@/lib/realtime-sync";
 
 const SLOTS: TimeSlot[] = ["morning", "afternoon", "evening"];
 
@@ -346,12 +346,11 @@ function ItineraryInner() {
   }, [analysis, accepted, coords, itineraryToShow]);
 
   function handleShare() {
-    // 点击邀请按钮 → 启动同步。hook 里会创建或复用 tripId。
+    // 点击邀请按钮 → 启动同步。直接同步拿 tripId，避免 hook useEffect 异步延迟。
     if (!coopEnabled) setCoopEnabled(true);
-    // v2.0：优先用 tripId 短链（同源多标签能实时同步），并保留 base64 fallback
-    const url = tripId
-      ? buildTripURL(tripId)
-      : buildShareURL(decisions);
+    // 同步获取（读 URL ?trip= / localStorage / 新建），保证第一次点击就出 ?trip= 链接
+    const id = getOrCreateTripId();
+    const url = buildTripURL(id);
     setShareURL(url);
     navigator.clipboard.writeText(url).then(
       () => {
