@@ -9,6 +9,7 @@ import {
   type DecisionStatus,
 } from "@/lib/store";
 import { TIME_SLOT_LABEL, type ItineraryDay, type TimeSlot } from "@/lib/schema";
+import { reorderItineraryByGeo } from "@/lib/reorder-by-geo";
 import { buildShareURL, readPartnerFromURL } from "@/lib/share";
 import { TripMap, type MapPOI } from "@/components/TripMap";
 import { useRealtimeSync } from "@/lib/use-realtime-sync";
@@ -96,9 +97,8 @@ function ItineraryInner() {
   const accepted = useMemo(() => getAcceptedItems(decisions), [decisions]);
   const acceptedSet = useMemo(() => new Set(accepted), [accepted]);
 
-  // 首次切到「地图」时才拉坐标，节省流量和时间
+  // v2.0 路线优化：进页就拉坐标（不再懒加载）。坐标同时服务于地图视图和地理重排。
   useEffect(() => {
-    if (activeTab !== "map") return;
     if (!analysis || accepted.length === 0) return;
     if (geocodeStatus !== "idle") return;
     setGeocodeStatus("loading");
@@ -117,7 +117,7 @@ function ItineraryInner() {
         }
       })
       .catch(() => setGeocodeStatus("error"));
-  }, [activeTab, analysis, accepted, geocodeStatus]);
+  }, [analysis, accepted, geocodeStatus]);
 
   // mapPOIs 依赖 finalItinerary 拿 day/order，定义移到 finalItinerary 之后
 
@@ -162,10 +162,19 @@ function ItineraryInner() {
     return days;
   }, [analysis, accepted, acceptedSet]);
 
-  // v2.0: 优先用用户手动调整后的行程，未调整则用 finalItinerary
+  // v2.0 路线优化：在 finalItinerary 之上叠加地理重排。
+  // - 坐标未到位 / 只有1个 / 重排函数识则有问题 → 原样返回。
+  // - 用户手动调整过 (customItinerary) → 不重排，尊重用户意愿。
+  const geoReorderedFinal: ItineraryDay[] = useMemo(() => {
+    if (!analysis) return finalItinerary;
+    if (geocodeStatus !== "done") return finalItinerary;
+    return reorderItineraryByGeo(finalItinerary, analysis.items, coords);
+  }, [analysis, finalItinerary, geocodeStatus, coords]);
+
+  // v2.0: 优先用用户手动调整后的行程，未调整则用地理重排后的 finalItinerary
   const itineraryToShow: ItineraryDay[] = useMemo(() => {
-    return customItinerary ?? finalItinerary;
-  }, [customItinerary, finalItinerary]);
+    return customItinerary ?? geoReorderedFinal;
+  }, [customItinerary, geoReorderedFinal]);
 
   // 编辑操作：拿到当前快照 → deep clone → mutate → setCustomItinerary
   function cloneItinerary(src: ItineraryDay[]): ItineraryDay[] {
