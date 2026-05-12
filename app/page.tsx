@@ -170,7 +170,7 @@ export default function Home() {
       </section>
 
       <footer className="mx-auto max-w-6xl px-6 py-10 text-center text-xs text-ink-500">
-        © 2026 TripPick · 48h Demo Build · v1.1
+        © 2026 TripPick
       </footer>
     </main>
   );
