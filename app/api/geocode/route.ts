@@ -4,25 +4,73 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 /**
- * 反向地理编码代理：把 POI 名称 + 城市 → 经纬度
+ * 地理编码代理：POI 名称 + 城市 → 经纬度
  *
- * 用 OpenStreetMap Nominatim 公共服务（免费、无需 Key）。
- * Nominatim 政策要求 < 1 req/s，且必须带 User-Agent。
- * 我们在内存里缓存查询结果（实例生命周期）。
+ * 策略（v2.0 修复定位错位）：
+ * 1) 先 query 城市，拿到 bbox（boundingbox）
+ * 2) 后续每个 POI 加 viewbox + bounded=1，强制结果落在城市范围内
+ * 3) 失败的返回 null，前端不展示，比错位到外地好
+ *
+ * Nominatim 政策：< 1 req/s + User-Agent；内存缓存避免重查。
  */
 
-// 简单内存缓存（每个 Vercel 实例独立）。命中即立即返回，无需限流。
-const cache = new Map<string, { lat: number; lng: number } | null>();
+// 缓存城市 bbox（"city" → bbox 字符串），独立于 POI 缓存
+const cityBboxCache = new Map<string, string | null>();
+// 缓存 POI 查询（"city|name" → coord | null）
+const poiCache = new Map<string, { lat: number; lng: number } | null>();
 
 interface NominatimHit {
   lat: string;
   lon: string;
   display_name: string;
+  boundingbox?: [string, string, string, string];
 }
 
-async function nominatimQuery(
+const UA = "TripPick/2.0 (https://trippick.win)";
+const NOMINATIM = "https://nominatim.openstreetmap.org/search";
+
+async function fetchNominatim(params: URLSearchParams): Promise<NominatimHit[] | null> {
+  try {
+    const res = await fetch(`${NOMINATIM}?${params}`, {
+      headers: { "User-Agent": UA },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as NominatimHit[];
+  } catch {
+    return null;
+  }
+}
+
+/** 查询城市 bbox。返回 Nominatim viewbox 格式："west,south,east,north"。 */
+async function getCityBbox(city: string): Promise<string | null> {
+  const key = city.toLowerCase();
+  if (cityBboxCache.has(key)) return cityBboxCache.get(key)!;
+
+  const params = new URLSearchParams({
+    q: city,
+    format: "json",
+    limit: "1",
+    "accept-language": "zh-CN",
+  });
+  const hits = await fetchNominatim(params);
+  if (!hits || hits.length === 0 || !hits[0]!.boundingbox) {
+    cityBboxCache.set(key, null);
+    return null;
+  }
+  // Nominatim boundingbox 顺序：[south, north, west, east]
+  const [south, north, west, east] = hits[0]!.boundingbox;
+  // viewbox 顺序：west,south,east,north
+  const viewbox = `${west},${south},${east},${north}`;
+  cityBboxCache.set(key, viewbox);
+  return viewbox;
+}
+
+/** 在 city bbox 内查 POI。命中返回坐标；查不到返回 null。 */
+async function geocodePOI(
   name: string,
   city: string,
+  viewbox: string | null,
 ): Promise<{ lat: number; lng: number } | null> {
   const params = new URLSearchParams({
     q: `${name} ${city}`,
@@ -30,22 +78,36 @@ async function nominatimQuery(
     limit: "1",
     "accept-language": "zh-CN",
   });
-  const url = `https://nominatim.openstreetmap.org/search?${params}`;
-  try {
-    const res = await fetch(url, {
-      headers: {
-        "User-Agent": "TripPick/2.0 (https://trippick-inky.vercel.app)",
-      },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) return null;
-    const data = (await res.json()) as NominatimHit[];
-    if (!data || data.length === 0) return null;
-    const hit = data[0]!;
-    return { lat: parseFloat(hit.lat), lng: parseFloat(hit.lon) };
-  } catch {
+  if (viewbox) {
+    params.set("viewbox", viewbox);
+    params.set("bounded", "1");
+  }
+  const hits = await fetchNominatim(params);
+  if (!hits || hits.length === 0) {
+    // bounded 模式查不到，尝试一次去掉 bounded 但保留 viewbox 的"偏好"
+    if (viewbox) {
+      const fallback = new URLSearchParams({
+        q: `${name} ${city}`,
+        format: "json",
+        limit: "1",
+        "accept-language": "zh-CN",
+        viewbox,
+      });
+      const hits2 = await fetchNominatim(fallback);
+      if (!hits2 || hits2.length === 0) return null;
+      // 校验返回坐标是否在 bbox 内（不在就丢掉，避免错位）
+      const [w, s, e, n] = viewbox.split(",").map(parseFloat);
+      const lat = parseFloat(hits2[0]!.lat);
+      const lng = parseFloat(hits2[0]!.lon);
+      if (lat < s! || lat > n! || lng < w! || lng > e!) return null;
+      return { lat, lng };
+    }
     return null;
   }
+  return {
+    lat: parseFloat(hits[0]!.lat),
+    lng: parseFloat(hits[0]!.lon),
+  };
 }
 
 function sleep(ms: number) {
@@ -69,21 +131,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "missing_input" }, { status: 400 });
   }
 
+  // 先获取城市 bbox（缓存命中则无网络请求）
+  const viewbox = await getCityBbox(city);
+
   const results: Record<string, { lat: number; lng: number } | null> = {};
-  let queriesIssued = 0;
+  let queriesIssued = viewbox && !cityBboxCache.has(city.toLowerCase()) ? 1 : 0;
+
   for (const name of items) {
     const key = `${city}|${name}`.toLowerCase();
-    if (cache.has(key)) {
-      results[name] = cache.get(key)!;
+    if (poiCache.has(key)) {
+      results[name] = poiCache.get(key)!;
       continue;
     }
-    // 未缓存：限流，第二次起前先 sleep 1.1s（Nominatim 1 req/s 政策）
     if (queriesIssued > 0) await sleep(1100);
-    const coord = await nominatimQuery(name, city);
-    cache.set(key, coord);
+    const coord = await geocodePOI(name, city, viewbox);
+    poiCache.set(key, coord);
     results[name] = coord;
     queriesIssued++;
   }
 
-  return NextResponse.json({ ok: true, coords: results });
+  return NextResponse.json({ ok: true, coords: results, city_viewbox: viewbox });
 }

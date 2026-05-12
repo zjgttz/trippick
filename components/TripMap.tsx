@@ -12,9 +12,14 @@ export interface MapPOI {
   type?: string;
   source?: "user_note" | "ai_recommended";
   recommended_reasons?: string[];
+  /** 该 POI 所属的 Day（1/2/3）。未排进行程则为 undefined。 */
+  day?: number;
+  /** 同 Day 内的顺序（1 起），用于序号和连线。 */
+  order?: number;
 }
 
 interface TripMapProps {
+  /** 全部 POI（包含定位失败的）。lat/lng 为 NaN 时视为定位失败，在地图下方列出。 */
   pois: MapPOI[];
   /** 城市名，用于地图初始中心 fallback */
   city: string;
@@ -27,20 +32,33 @@ declare global {
   }
 }
 
+// Day 配色：Day1 蓝 / Day2 绿 / Day3 紫 / 其他/AI 橙
+const DAY_COLORS: Record<number, string> = {
+  1: "#3b82f6", // blue-500
+  2: "#10b981", // emerald-500
+  3: "#8b5cf6", // violet-500
+};
+const AI_COLOR = "#f97316"; // orange-500
+const FALLBACK_COLOR = "#64748b"; // slate-500
+
+function colorOf(p: MapPOI): string {
+  if (p.source === "ai_recommended") return AI_COLOR;
+  if (p.day && DAY_COLORS[p.day]) return DAY_COLORS[p.day]!;
+  return FALLBACK_COLOR;
+}
+
 function loadLeaflet(): Promise<any> {
   if (typeof window === "undefined") return Promise.reject("ssr");
   if (window.L) return Promise.resolve(window.L);
   if (window.__leafletLoading) return window.__leafletLoading;
 
   window.__leafletLoading = new Promise((resolve, reject) => {
-    // CSS
     if (!document.querySelector(`link[href="${LEAFLET_CSS}"]`)) {
       const link = document.createElement("link");
       link.rel = "stylesheet";
       link.href = LEAFLET_CSS;
       document.head.appendChild(link);
     }
-    // JS
     const existing = document.querySelector(`script[src="${LEAFLET_JS}"]`);
     if (existing) {
       existing.addEventListener("load", () => resolve(window.L));
@@ -57,37 +75,39 @@ function loadLeaflet(): Promise<any> {
   return window.__leafletLoading;
 }
 
-export function TripMap({ pois, city }: TripMapProps) {
+export function TripMap({ pois, city: _city }: TripMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+
+  const valid = pois.filter(
+    (p) => Number.isFinite(p.lat) && Number.isFinite(p.lng),
+  );
+  const failed = pois.filter(
+    (p) => !Number.isFinite(p.lat) || !Number.isFinite(p.lng),
+  );
 
   useEffect(() => {
     let cancelled = false;
     loadLeaflet()
       .then((L) => {
         if (cancelled || !containerRef.current) return;
-        if (mapRef.current) return; // already initialized
+        if (mapRef.current) return;
 
-        // 初始中心：第一个有坐标的 POI，否则 fallback 到中国大致中心
-        const valid = pois.filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng));
         const center =
-          valid.length > 0
-            ? [valid[0]!.lat, valid[0]!.lng]
-            : [35.0, 105.0]; // 中国大致中心
+          valid.length > 0 ? [valid[0]!.lat, valid[0]!.lng] : [35.0, 105.0];
 
-        // v2.0 修复：移动端体验优化 — 默认禁用滚轮/两指手势避免误触，点击地图后启用
-        const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
+        const isMobile =
+          typeof window !== "undefined" &&
+          window.matchMedia("(max-width: 640px)").matches;
         const map = L.map(containerRef.current, {
           scrollWheelZoom: !isMobile,
           touchZoom: true,
           tap: true,
-          // 手机上默认不拖拽，点击启用（避免页面滚动被拦截）
           dragging: !isMobile,
         }).setView(center, valid.length > 0 ? 12 : 4);
         mapRef.current = map;
 
-        // 手机点击地图后才启用拖拽
         if (isMobile) {
           const enableDragging = () => {
             map.dragging.enable();
@@ -102,32 +122,72 @@ export function TripMap({ pois, city }: TripMapProps) {
             '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
         }).addTo(map);
 
+        // 1) 画 Day 连线（同一 Day 按 order 排序）
+        const byDay = new Map<number, MapPOI[]>();
+        for (const p of valid) {
+          if (!p.day || p.source === "ai_recommended") continue;
+          if (!byDay.has(p.day)) byDay.set(p.day, []);
+          byDay.get(p.day)!.push(p);
+        }
+        for (const [day, list] of byDay.entries()) {
+          if (list.length < 2) continue;
+          list.sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+          const latlngs = list.map((p) => [p.lat, p.lng]);
+          L.polyline(latlngs, {
+            color: DAY_COLORS[day] ?? FALLBACK_COLOR,
+            weight: 3,
+            opacity: 0.55,
+            dashArray: "6 8",
+          }).addTo(map);
+        }
+
+        // 2) 画 Marker（带序号 / Day 颜色）
         const markers: any[] = [];
         for (const p of valid) {
-          // 自定义 icon: ai_recommended 用紫色，其他用品牌色橙
+          const color = colorOf(p);
           const isAI = p.source === "ai_recommended";
-          const color = isAI ? "#9333ea" : "#f97316";
-          // v2.0 修复：手机上名称太长会重叠，限制最大宽度 + 省10 字截断
-          const displayName = p.name.length > 10 ? p.name.slice(0, 9) + "…" : p.name;
+          const displayName =
+            p.name.length > 10 ? p.name.slice(0, 9) + "…" : p.name;
+          // 序号：用户笔记的 POI 显示 order；AI 推荐显示 ✨
+          const badge = isAI
+            ? "✨"
+            : p.order
+              ? String(p.order)
+              : "•";
           const icon = L.divIcon({
             className: "trippick-marker",
             html: `
               <div style="
+                display:inline-flex;
+                align-items:center;
+                gap:4px;
                 background:${color};
                 color:white;
                 border:2px solid white;
-                box-shadow:0 2px 8px rgba(0,0,0,0.2);
+                box-shadow:0 2px 8px rgba(0,0,0,0.25);
                 border-radius:999px;
-                padding:3px 8px;
+                padding:3px 9px 3px 4px;
                 font-size:11px;
                 font-weight:600;
                 white-space:nowrap;
                 font-family:system-ui,sans-serif;
-                max-width:140px;
+                max-width:160px;
                 overflow:hidden;
                 text-overflow:ellipsis;
               ">
-                ${isAI ? "✨ " : ""}${escapeHtml(displayName)}
+                <span style="
+                  display:inline-flex;
+                  align-items:center;
+                  justify-content:center;
+                  background:rgba(255,255,255,0.25);
+                  border-radius:999px;
+                  min-width:18px;
+                  height:18px;
+                  padding:0 4px;
+                  font-size:10px;
+                  font-weight:700;
+                ">${escapeHtml(badge)}</span>
+                <span>${escapeHtml(displayName)}</span>
               </div>
             `,
             iconSize: [0, 0],
@@ -140,9 +200,14 @@ export function TripMap({ pois, city }: TripMapProps) {
                   p.recommended_reasons.slice(0, 2).join(" · "),
                 )}</div>`
               : "";
+          const dayBadge = p.day
+            ? `<span style="display:inline-block;background:${color};color:white;font-size:10px;font-weight:600;padding:1px 6px;border-radius:999px;margin-left:4px;">Day ${p.day}</span>`
+            : isAI
+              ? `<span style="display:inline-block;background:${AI_COLOR};color:white;font-size:10px;font-weight:600;padding:1px 6px;border-radius:999px;margin-left:4px;">AI 补充</span>`
+              : "";
           marker.bindPopup(`
             <div style="font-family:system-ui;min-width:160px">
-              <div style="font-weight:600;font-size:14px;">${escapeHtml(p.name)}</div>
+              <div style="font-weight:600;font-size:14px;">${escapeHtml(p.name)}${dayBadge}</div>
               ${p.type ? `<div style="font-size:11px;color:#888;margin-top:2px;">${escapeHtml(p.type)}</div>` : ""}
               ${reasonsHtml}
             </div>
@@ -168,9 +233,9 @@ export function TripMap({ pois, city }: TripMapProps) {
         mapRef.current = null;
       }
     };
-    // 只在 pois 列表变化（按 name 拼接）时重建地图
+    // 重建依据：POI 名字 + day + order 三元组组合（任意变化都重建）
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pois.map((p) => p.name).join("|")]);
+  }, [pois.map((p) => `${p.name}-${p.day ?? 0}-${p.order ?? 0}`).join("|")]);
 
   if (status === "error") {
     return (
@@ -180,13 +245,8 @@ export function TripMap({ pois, city }: TripMapProps) {
     );
   }
 
-  const validCount = pois.filter(
-    (p) => Number.isFinite(p.lat) && Number.isFinite(p.lng),
-  ).length;
-
   return (
     <div className="space-y-2">
-      {/* v2.0 修复：手机高度 320px 避免占满屏，桌面 480px */}
       <div
         ref={containerRef}
         className="h-[320px] w-full overflow-hidden rounded-2xl ring-1 ring-ink-100 sm:h-[480px]"
@@ -195,36 +255,54 @@ export function TripMap({ pois, city }: TripMapProps) {
       <p className="text-center text-xs text-ink-400 sm:hidden">
         👆 点击地图后可拖动、双指缩放
       </p>
+
+      {/* 图例 */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-ink-500">
         <div>
-          地图基于 OpenStreetMap，标注了 {validCount} 个地点
-          {validCount < pois.length && (
+          地图基于 OpenStreetMap，标注了 {valid.length} 个地点
+          {failed.length > 0 && (
             <span className="ml-2 text-amber-600">
-              · {pois.length - validCount} 个未能定位
+              · {failed.length} 个未能定位
             </span>
           )}
         </div>
-        <div className="flex items-center gap-3">
-          <span className="inline-flex items-center gap-1">
-            <span
-              style={{ background: "#f97316" }}
-              className="inline-block h-2.5 w-2.5 rounded-full"
-            />
-            笔记提取
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <span
-              style={{ background: "#9333ea" }}
-              className="inline-block h-2.5 w-2.5 rounded-full"
-            />
-            AI 补充
-          </span>
+        <div className="flex flex-wrap items-center gap-3">
+          <LegendDot color={DAY_COLORS[1]!} label="Day 1" />
+          <LegendDot color={DAY_COLORS[2]!} label="Day 2" />
+          <LegendDot color={DAY_COLORS[3]!} label="Day 3" />
+          <LegendDot color={AI_COLOR} label="AI 补充" />
         </div>
       </div>
+
+      {/* 未定位列表 */}
+      {failed.length > 0 && (
+        <div className="rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800 ring-1 ring-amber-100">
+          <div className="font-medium">以下地点未能在地图上定位：</div>
+          <div className="mt-1">
+            {failed.map((p) => p.name).join("、")}
+          </div>
+          <div className="mt-1 text-amber-600/80">
+            可能是地名不规范或 OpenStreetMap 暂无收录，行程视图仍可正常查看
+          </div>
+        </div>
+      )}
+
       {status === "loading" && (
         <div className="text-center text-xs text-ink-500">加载地图组件中…</div>
       )}
     </div>
+  );
+}
+
+function LegendDot({ color, label }: { color: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      <span
+        style={{ background: color }}
+        className="inline-block h-2.5 w-2.5 rounded-full"
+      />
+      {label}
+    </span>
   );
 }
 

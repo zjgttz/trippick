@@ -94,25 +94,7 @@ function ItineraryInner() {
       .catch(() => setGeocodeStatus("error"));
   }, [activeTab, analysis, accepted, geocodeStatus]);
 
-  // 拼装地图 POI 数据
-  const mapPOIs: MapPOI[] = useMemo(() => {
-    if (!analysis) return [];
-    const list: MapPOI[] = [];
-    for (const name of accepted) {
-      const c = coords[name];
-      if (!c) continue;
-      const it = analysis.items.find((i) => i.name === name);
-      list.push({
-        name,
-        lat: c.lat,
-        lng: c.lng,
-        type: it?.type,
-        source: it?.source,
-        recommended_reasons: it?.recommended_reasons,
-      });
-    }
-    return list;
-  }, [analysis, accepted, coords]);
+  // mapPOIs 依赖 finalItinerary 拿 day/order，定义移到 finalItinerary 之后
 
   // 基于已选项构建最终行程：以 AI 推荐排期为基础，剔除未选项
   const finalItinerary: ItineraryDay[] = useMemo(() => {
@@ -154,6 +136,38 @@ function ItineraryInner() {
 
     return days;
   }, [analysis, accepted, acceptedSet]);
+
+  // 拼装地图 POI：按 finalItinerary 顺序填 day/order；未定位的以 NaN 坐标传出让 TripMap 列出
+  const mapPOIs: MapPOI[] = useMemo(() => {
+    if (!analysis) return [];
+    // 先从 finalItinerary 里反向查询 “name → {day, order}”
+    const dayOrder = new Map<string, { day: number; order: number }>();
+    for (const d of finalItinerary) {
+      let cursor = 1;
+      for (const sl of d.slots) {
+        for (const n of sl.items) {
+          if (!dayOrder.has(n)) dayOrder.set(n, { day: d.day, order: cursor++ });
+        }
+      }
+    }
+    const list: MapPOI[] = [];
+    for (const name of accepted) {
+      const c = coords[name];
+      const it = analysis.items.find((i) => i.name === name);
+      const meta = dayOrder.get(name);
+      list.push({
+        name,
+        lat: c?.lat ?? NaN,
+        lng: c?.lng ?? NaN,
+        type: it?.type,
+        source: it?.source,
+        recommended_reasons: it?.recommended_reasons,
+        day: meta?.day,
+        order: meta?.order,
+      });
+    }
+    return list;
+  }, [analysis, accepted, coords, finalItinerary]);
 
   // 预算汇总（粗略：把 estimated_budget 里第一个数字累加）
   const budget = useMemo(() => {
