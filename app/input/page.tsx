@@ -25,6 +25,9 @@ export default function InputPage() {
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
   // v2.0 M3：每个输入框单独的「检测到小红书分享文案」提示
   const [parseHints, setParseHints] = useState<(string | null)[]>([null, null, null]);
+  // v2.0 修复：每个输入框独立的「试试自动抓取」状态
+  const [fetchingIdx, setFetchingIdx] = useState<number | null>(null);
+  const [fetchHints, setFetchHints] = useState<(string | null)[]>([null, null, null]);
 
   const filled = notes.filter((n) => n.trim().length >= MIN_LEN).length;
   const tooLong = notes.some((n) => n.length > MAX_LEN);
@@ -56,10 +59,63 @@ export default function InputPage() {
     setParseHints((prev) => prev.map((h, idx) => (idx === i ? null : h)));
   }
 
+  // v2.0 修复：试试后端自动抓小红书正文
+  async function tryFetchXhs(i: number) {
+    const text = notes[i];
+    if (!text) return;
+    setFetchingIdx(i);
+    setFetchHints((prev) => prev.map((h, idx) => (idx === i ? null : h)));
+    try {
+      const res = await fetch("/api/fetch-xhs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: text }),
+      });
+      const data = await res.json();
+      if (data.ok && data.body) {
+        const combined = data.title
+          ? `${data.title}\n${data.body}`
+          : data.body;
+        setNotes((prev) =>
+          prev.map((n, idx) => (idx === i ? combined : n)),
+        );
+        setParseHints((prev) => prev.map((h, idx) => (idx === i ? null : h)));
+        setFetchHints((prev) =>
+          prev.map((h, idx) => (idx === i ? "✅ 成功抓取正文" : h)),
+        );
+      } else {
+        let msg = data.message || "抓取失败";
+        if (data.reason === "blocked") {
+          msg =
+            "小红书拦截了抓取（反爬触发）。请在小红书 APP 里打开帖子 → 长按文字 → 复制 → 粘到这里。";
+        } else if (data.reason === "no_content") {
+          msg =
+            "这篇帖子看起来是图片/视频为主，文字很少。请手动复制 APP 里的文字到输入框。";
+        } else if (data.reason === "timeout") {
+          msg = "抓取超时，请重试，或手动复制正文。";
+        }
+        setFetchHints((prev) =>
+          prev.map((h, idx) => (idx === i ? `⚠️ ${msg}` : h)),
+        );
+      }
+    } catch (e) {
+      setFetchHints((prev) =>
+        prev.map((h, idx) =>
+          idx === i
+            ? `⚠️ 网络异常：${e instanceof Error ? e.message : String(e)}`
+            : h,
+        ),
+      );
+    } finally {
+      setFetchingIdx(null);
+    }
+  }
+
   function addNote() {
     if (notes.length < 8) {
       setNotes((prev) => [...prev, ""]);
       setParseHints((prev) => [...prev, null]);
+      setFetchHints((prev) => [...prev, null]);
     }
   }
 
@@ -67,6 +123,7 @@ export default function InputPage() {
     if (notes.length <= 2) return;
     setNotes((prev) => prev.filter((_, idx) => idx !== i));
     setParseHints((prev) => prev.filter((_, idx) => idx !== i));
+    setFetchHints((prev) => prev.filter((_, idx) => idx !== i));
   }
 
   function fillSample() {
@@ -241,14 +298,34 @@ export default function InputPage() {
                 className="mt-2 w-full resize-y rounded-lg bg-ink-100/60 px-3 py-2 text-sm text-ink-900 placeholder:text-ink-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-200"
               />
               {parseHints[i] && (
-                <div className="mt-2 flex items-center justify-between rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-600 ring-1 ring-brand-200">
-                  <span>📋 {parseHints[i]}</span>
-                  <button
-                    onClick={() => applyParse(i)}
-                    className="rounded-md bg-brand-500 px-2 py-1 font-semibold text-white transition hover:bg-brand-600"
-                  >
-                    一键清洗
-                  </button>
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-600 ring-1 ring-brand-200">
+                  <span className="flex-1 min-w-0">📋 {parseHints[i]}</span>
+                  <div className="flex shrink-0 gap-2">
+                    <button
+                      onClick={() => applyParse(i)}
+                      className="rounded-md bg-brand-500 px-2 py-1 font-semibold text-white transition hover:bg-brand-600"
+                    >
+                      只清洗文案
+                    </button>
+                    <button
+                      onClick={() => tryFetchXhs(i)}
+                      disabled={fetchingIdx === i}
+                      className="rounded-md bg-purple-500 px-2 py-1 font-semibold text-white transition hover:bg-purple-600 disabled:opacity-60"
+                    >
+                      {fetchingIdx === i ? "抓取中…" : "🔗 试试自动抓取正文"}
+                    </button>
+                  </div>
+                </div>
+              )}
+              {fetchHints[i] && (
+                <div
+                  className={`mt-2 rounded-lg px-3 py-2 text-xs ring-1 ${
+                    fetchHints[i]?.startsWith("✅")
+                      ? "bg-green-50 text-green-700 ring-green-200"
+                      : "bg-amber-50 text-amber-800 ring-amber-200"
+                  }`}
+                >
+                  {fetchHints[i]}
                 </div>
               )}
             </div>
