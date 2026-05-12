@@ -51,8 +51,9 @@ function AnalyzeInner() {
   const [loadingDemo, setLoadingDemo] = useState(false);
   const [enriching, setEnriching] = useState(false);
   const [enrichedItems, setEnrichedItems] = useState<POIItem[]>([]);
-  // v2.0 M5：同源多标签实时同步（仅在有分析结果时启用）
-  const { peerCount } = useRealtimeSync(!!analysis);
+  // v2.0: 默认不启用多人同步。仅当 URL 中明确是分享链接进来时启用。
+  const fromShare = search.get("from") === "share";
+  const { peerCount } = useRealtimeSync(!!analysis && fromShare);
 
   // v2.0: POI 数量偶少时异步调用 enrich 接口补充
   useEffect(() => {

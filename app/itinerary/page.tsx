@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   useTripPickStore,
@@ -45,11 +45,21 @@ function ItineraryInner() {
   const partnerDecisions = useTripPickStore((s) => s.partnerDecisions);
   const setPartnerDecisions = useTripPickStore((s) => s.setPartnerDecisions);
   const setAnalysis = useTripPickStore((s) => s.setAnalysis);
+  const customItinerary = useTripPickStore((s) => s.customItinerary);
+  const setCustomItinerary = useTripPickStore((s) => s.setCustomItinerary);
 
   const [shareURL, setShareURL] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  // v2.0 M5: 实时同步 hook
-  const { tripId, peerCount, lastPeerUpdate } = useRealtimeSync(true);
+  // v2.0: 编辑行程相关
+  const timelineRef = useRef<HTMLDivElement | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [addModal, setAddModal] = useState<
+    { day: number; time_slot: TimeSlot } | null
+  >(null);
+  const [addName, setAddName] = useState("");
+  // v2.0: 默认不启动多人同步。点「邀请同行人」或从分享链接进入时才启动。
+  const [coopEnabled, setCoopEnabled] = useState(false);
+  const { tripId, peerCount, lastPeerUpdate } = useRealtimeSync(coopEnabled);
   // v2.0 M4: tab 切换 + 地图坐标
   const [activeTab, setActiveTab] = useState<"timeline" | "map">("timeline");
   const [coords, setCoords] = useState<Record<string, { lat: number; lng: number } | null>>({});
@@ -58,7 +68,15 @@ function ItineraryInner() {
   // 协同：如果有 ?s=... 参数，把它当作"伙伴的选择"读入
   useEffect(() => {
     const partner = readPartnerFromURL();
-    if (partner) setPartnerDecisions(partner);
+    if (partner) {
+      setPartnerDecisions(partner);
+      setCoopEnabled(true); // 从分享链接进来 → 自动启用同步
+    } else if (!fromShare) {
+      // 单人模式：清掉上次会话残留的 partnerDecisions，避免误报「同行人」
+      setPartnerDecisions(null);
+    }
+    // 从URL看是否带 trip_id（分享者发来的同步链接）
+    if (fromShare) setCoopEnabled(true);
 
     // 如果是分享链接打开且本地没数据，自动加载 mock 让 demo 可见
     if (fromShare && !analysis) {
@@ -137,12 +155,90 @@ function ItineraryInner() {
     return days;
   }, [analysis, accepted, acceptedSet]);
 
-  // 拼装地图 POI：按 finalItinerary 顺序填 day/order；未定位的以 NaN 坐标传出让 TripMap 列出
+  // v2.0: 优先用用户手动调整后的行程，未调整则用 finalItinerary
+  const itineraryToShow: ItineraryDay[] = useMemo(() => {
+    return customItinerary ?? finalItinerary;
+  }, [customItinerary, finalItinerary]);
+
+  // 编辑操作：拿到当前快照 → deep clone → mutate → setCustomItinerary
+  function cloneItinerary(src: ItineraryDay[]): ItineraryDay[] {
+    return src.map((d) => ({
+      day: d.day,
+      slots: d.slots.map((s) => ({
+        time_slot: s.time_slot,
+        items: [...s.items],
+        note: s.note,
+      })),
+    }));
+  }
+
+  function handleDeleteItem(day: number, time_slot: TimeSlot, name: string) {
+    const next = cloneItinerary(itineraryToShow);
+    const d = next.find((x) => x.day === day);
+    if (!d) return;
+    const sl = d.slots.find((x) => x.time_slot === time_slot);
+    if (!sl) return;
+    sl.items = sl.items.filter((n) => n !== name);
+    setCustomItinerary(next);
+  }
+
+  function handleAddItem() {
+    if (!addModal) return;
+    const name = addName.trim();
+    if (!name) return;
+    const next = cloneItinerary(itineraryToShow);
+    let d = next.find((x) => x.day === addModal.day);
+    if (!d) {
+      d = {
+        day: addModal.day,
+        slots: SLOTS.map((s) => ({ time_slot: s, items: [], note: "" })),
+      };
+      next.push(d);
+      next.sort((a, b) => a.day - b.day);
+    }
+    let sl = d.slots.find((x) => x.time_slot === addModal.time_slot);
+    if (!sl) {
+      sl = { time_slot: addModal.time_slot, items: [], note: "" };
+      d.slots.push(sl);
+    }
+    if (!sl.items.includes(name)) sl.items.push(name);
+    setCustomItinerary(next);
+    setAddModal(null);
+    setAddName("");
+  }
+
+  function handleResetCustom() {
+    setCustomItinerary(null);
+  }
+
+  async function handleExportImage() {
+    if (!timelineRef.current) return;
+    setExporting(true);
+    try {
+      const { toPng } = await import("html-to-image");
+      const dataUrl = await toPng(timelineRef.current, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: "#ffffff",
+      });
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `trippick-${analysis?.destination || "trip"}.png`;
+      a.click();
+    } catch (e) {
+      console.error("生成长图失败", e);
+      alert("生成长图失败，请重试");
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  // 拼装地图 POI：按 itineraryToShow 顺序填 day/order；未定位的以 NaN 坐标传出让 TripMap 列出
   const mapPOIs: MapPOI[] = useMemo(() => {
     if (!analysis) return [];
-    // 先从 finalItinerary 里反向查询 “name → {day, order}”
+    // 先从 itineraryToShow 里反向查询 “name → {day, order}”
     const dayOrder = new Map<string, { day: number; order: number }>();
-    for (const d of finalItinerary) {
+    for (const d of itineraryToShow) {
       let cursor = 1;
       for (const sl of d.slots) {
         for (const n of sl.items) {
@@ -167,7 +263,7 @@ function ItineraryInner() {
       });
     }
     return list;
-  }, [analysis, accepted, coords, finalItinerary]);
+  }, [analysis, accepted, coords, itineraryToShow]);
 
   // 预算汇总（粗略：把 estimated_budget 里第一个数字累加）
   const budget = useMemo(() => {
@@ -188,6 +284,8 @@ function ItineraryInner() {
   }, [analysis, accepted]);
 
   function handleShare() {
+    // 点击邀请按钮 → 启动同步。hook 里会创建或复用 tripId。
+    if (!coopEnabled) setCoopEnabled(true);
     // v2.0：优先用 tripId 短链（同源多标签能实时同步），并保留 base64 fallback
     const url = tripId
       ? buildTripURL(tripId)
@@ -424,13 +522,46 @@ function ItineraryInner() {
 
       {/* 行程时间轴 */}
       {activeTab === "timeline" && (
-      <section className="mt-8 space-y-6">
-        {finalItinerary.length === 0 && (
+      <section className="mt-8">
+        {/* 编辑工具栏 */}
+        {itineraryToShow.length > 0 && (
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <div className="text-xs text-ink-500">
+              {customItinerary ? (
+                <span className="rounded-full bg-accent-50 px-2 py-1 text-accent-600 ring-1 ring-accent-200">
+                  已手动调整
+                </span>
+              ) : (
+                <span>点击条目右上角 ✕ 可删除，或点 “+ 添加” 插入自定义条目（如高铁、机场大巴）</span>
+              )}
+            </div>
+            <div className="flex gap-2">
+              {customItinerary && (
+                <button
+                  onClick={handleResetCustom}
+                  className="rounded-lg bg-white px-3 py-1.5 text-xs ring-1 ring-ink-200 hover:bg-ink-100/40"
+                >
+                  ↻ 恢复 AI 默认排期
+                </button>
+              )}
+              <button
+                onClick={handleExportImage}
+                disabled={exporting}
+                className="rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-600 disabled:opacity-60"
+              >
+                {exporting ? "生成中…" : "📅 生成长图保存"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div ref={timelineRef} className="space-y-6 bg-white/0">
+        {itineraryToShow.length === 0 && (
           <div className="rounded-2xl bg-white p-10 text-center text-ink-500 ring-1 ring-ink-100">
             还没有任何已确认的地点，先回去选几个 ✅
           </div>
         )}
-        {activeTab === "timeline" && finalItinerary.map((day) => (
+        {activeTab === "timeline" && itineraryToShow.map((day) => (
           <div key={day.day} className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-ink-100">
             <div className="flex items-center gap-3">
               <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-500 text-white font-bold">
@@ -439,8 +570,14 @@ function ItineraryInner() {
               <h2 className="text-lg font-semibold">Day {day.day}</h2>
             </div>
             <div className="mt-4 space-y-4">
-              {day.slots.map((slot) => {
-                if (slot.items.length === 0) return null;
+              {SLOTS.map((slotKey) => {
+                const slot =
+                  day.slots.find((s) => s.time_slot === slotKey) ?? {
+                    time_slot: slotKey,
+                    items: [] as string[],
+                    note: "",
+                  };
+                const hasItems = slot.items.length > 0;
                 return (
                   <div key={slot.time_slot} className="flex gap-4">
                     <div className="w-16 shrink-0 text-xs font-semibold text-ink-500">
@@ -454,13 +591,28 @@ function ItineraryInner() {
                         return (
                           <div
                             key={n}
-                            className="rounded-xl bg-ink-100/40 p-3 ring-1 ring-ink-100"
+                            className="group relative rounded-xl bg-ink-100/40 p-3 pr-9 ring-1 ring-ink-100"
                           >
+                            {!exporting && (
+                              <button
+                                onClick={() =>
+                                  handleDeleteItem(day.day, slot.time_slot, n)
+                                }
+                                title="删除该条目"
+                                className="absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-white text-ink-500 ring-1 ring-ink-200 opacity-0 transition group-hover:opacity-100 hover:bg-red-50 hover:text-red-600 hover:ring-red-200"
+                              >
+                                ✕
+                              </button>
+                            )}
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="font-semibold">{n}</span>
-                              {it && (
+                              {it ? (
                                 <span className="rounded-full bg-white px-2 py-0.5 text-xs text-ink-700 ring-1 ring-ink-100">
                                   {it.type}
+                                </span>
+                              ) : (
+                                <span className="rounded-full bg-accent-50 px-2 py-0.5 text-xs text-accent-600 ring-1 ring-accent-200">
+                                  手动添加
                                 </span>
                               )}
                               {partnerWants && (
@@ -487,6 +639,18 @@ function ItineraryInner() {
                           💡 {slot.note}
                         </div>
                       )}
+                      {!exporting && (
+                        <button
+                          onClick={() =>
+                            setAddModal({ day: day.day, time_slot: slot.time_slot })
+                          }
+                          className={`w-full rounded-lg border border-dashed border-ink-200 px-3 py-1.5 text-xs text-ink-500 hover:border-brand-300 hover:bg-brand-50/40 hover:text-brand-600 ${
+                            hasItems ? "" : "opacity-70"
+                          }`}
+                        >
+                          + 添加条目到 {TIME_SLOT_LABEL[slot.time_slot]}
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -494,7 +658,127 @@ function ItineraryInner() {
             </div>
           </div>
         ))}
+        {/* 新增一天 */}
+        {!exporting && itineraryToShow.length > 0 && (
+          <button
+            onClick={() => {
+              const maxDay = itineraryToShow.reduce(
+                (m, d) => Math.max(m, d.day),
+                0
+              );
+              setAddModal({ day: maxDay + 1, time_slot: "morning" });
+            }}
+            className="w-full rounded-2xl border-2 border-dashed border-ink-200 bg-white/40 px-4 py-3 text-sm text-ink-500 hover:border-brand-300 hover:bg-brand-50/40 hover:text-brand-600"
+          >
+            + 新增一天
+          </button>
+        )}
+        </div>
       </section>
+      )}
+
+      {/* 添加条目 Modal */}
+      {addModal && (
+        <div
+          className="fixed inset-0 z-50 grid place-items-center bg-ink-900/40 p-4"
+          onClick={() => {
+            setAddModal(null);
+            setAddName("");
+          }}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-base font-semibold">添加条目</div>
+            <div className="mt-1 text-xs text-ink-500">
+              例如：“高铁从上海到杭州”、“机场大巴”、“酒店 check-in”
+            </div>
+
+            <label className="mt-4 block text-xs font-semibold text-ink-700">
+              名称
+            </label>
+            <input
+              autoFocus
+              value={addName}
+              onChange={(e) => setAddName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleAddItem();
+              }}
+              placeholder="输入条目名称…"
+              className="mt-1 w-full rounded-lg bg-ink-100/40 px-3 py-2 text-sm ring-1 ring-ink-100 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-400"
+            />
+
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-ink-700">
+                  第几天
+                </label>
+                <select
+                  value={addModal.day}
+                  onChange={(e) =>
+                    setAddModal({ ...addModal, day: parseInt(e.target.value, 10) })
+                  }
+                  className="mt-1 w-full rounded-lg bg-ink-100/40 px-3 py-2 text-sm ring-1 ring-ink-100"
+                >
+                  {Array.from(
+                    {
+                      length: Math.max(
+                        addModal.day,
+                        itineraryToShow.reduce((m, d) => Math.max(m, d.day), 0) + 1
+                      ),
+                    },
+                    (_, i) => i + 1
+                  ).map((d) => (
+                    <option key={d} value={d}>
+                      Day {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-ink-700">
+                  时段
+                </label>
+                <select
+                  value={addModal.time_slot}
+                  onChange={(e) =>
+                    setAddModal({
+                      ...addModal,
+                      time_slot: e.target.value as TimeSlot,
+                    })
+                  }
+                  className="mt-1 w-full rounded-lg bg-ink-100/40 px-3 py-2 text-sm ring-1 ring-ink-100"
+                >
+                  {SLOTS.map((s) => (
+                    <option key={s} value={s}>
+                      {TIME_SLOT_LABEL[s]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setAddModal(null);
+                  setAddName("");
+                }}
+                className="rounded-lg bg-white px-4 py-2 text-sm ring-1 ring-ink-200 hover:bg-ink-100/40"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleAddItem}
+                disabled={!addName.trim()}
+                className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
+              >
+                添加
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* 预算汇总 */}
@@ -515,7 +799,7 @@ function ItineraryInner() {
             <div className="text-right text-xs text-ink-500">
               已选 {accepted.length} 项
               <br />
-              共 {finalItinerary.length} 天
+              共 {itineraryToShow.length} 天
             </div>
           </div>
         </section>
