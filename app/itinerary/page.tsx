@@ -507,7 +507,7 @@ function ItineraryInner() {
 
             <div className="rounded-xl bg-accent-50 p-3 ring-1 ring-accent-200">
               <div className="text-xs font-semibold text-accent-600">
-                ⚡ 有分歧（{disagree.length}）
+                ⚡ 驴友意见不合（{disagree.length}）
               </div>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {disagree.length === 0 ? (
