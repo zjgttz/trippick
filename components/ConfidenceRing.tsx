@@ -13,7 +13,10 @@ export function ConfidenceRing({ score, size = 44 }: Props) {
     s >= 80 ? "#FF2442" : s >= 60 ? "#FFB800" : s >= 40 ? "#94A3B8" : "#CBD5E1";
 
   return (
-    <div className="relative inline-flex" style={{ width: size, height: size }}>
+    <div
+      className="relative inline-flex"
+      style={{ width: size, height: size }}
+      title={`推荐度 ${s}/100（综合这个地点被提到的篇数、推荐强度、口碑一致性）`}>
       <svg width={size} height={size} className="-rotate-90">
         <circle
           cx={size / 2}

@@ -138,28 +138,28 @@ export const CONFLICT_META: Record<
   { label: string; icon: string; color: string; bg: string; ring: string }
 > = {
   distance: {
-    label: "距离冲突",
+    label: "距离较远",
     icon: "🗺️",
     color: "text-warn-distance",
     bg: "bg-warn-distance/10",
     ring: "ring-warn-distance/30",
   },
   opinion: {
-    label: "评价分歧",
+    label: "口碑分歧",
     icon: "⚠️",
     color: "text-warn-opinion",
     bg: "bg-warn-opinion/10",
     ring: "ring-warn-opinion/30",
   },
   time_overload: {
-    label: "时段过载",
+    label: "同时段太多",
     icon: "⏰",
     color: "text-warn-overload",
     bg: "bg-warn-overload/10",
     ring: "ring-warn-overload/30",
   },
   prerequisite: {
-    label: "前置条件",
+    label: "需要提前准备",
     icon: "📋",
     color: "text-warn-prereq",
     bg: "bg-warn-prereq/10",

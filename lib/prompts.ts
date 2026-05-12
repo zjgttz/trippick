@@ -87,26 +87,29 @@ ${JSON.stringify(items, null, 2)}
 
 // ============ 合并 Prompt（v2.0 性能，一次调用代替 Extract+Conflict） ============
 
-export const FULL_SYSTEM_PROMPT = `从小红书旅行笔记一次性抽取 POI、识别冲突并生成排期。
+export const FULL_SYSTEM_PROMPT = `从小红书旅行笔记一次性抽取推荐地点、识别提醒并生成行程排期。
 
-输出字段：destination、trip_style(2-4个)、items[]、conflicts[]、itinerary_suggestion[]。
+输出字段（全部必填，缺则补空）：destination(非空字符串)、trip_style(2-4个字符串)、items[]、conflicts[]、itinerary_suggestion[]。
+即使笔记内容不足，也绝不能输出空 destination 或空 items 数组；items 至少 1 项。
+conflicts 没有时输出空数组 [] 即可，不能省略字段。
 
 【items 计算】
-source_count = 出现笔记数；confidence_score (0-100) = 出现频次40% + 情绪强度30% (强推+/踩雷-) + 一致性30%。
-同名或仅标点差异视为同项（"灵隐寺"="灵隐寺景区"）；recommended_reasons/warnings 并集去重。
-type枚举：景点/餐厅/住宿/交通/其他。
+source_count = 出现笔记数；confidence_score (0-100 整数) = 出现频次40% + 情绪强度30% (强推+/踩雷-) + 一致性30%。
+同名或仅标点差异视为同项（如"灵隐寺"="灵隐寺景区"）；recommended_reasons/warnings 并集去重。
+type 枚举：景点/餐厅/住宿/交通/其他。其它字符串字段缺失用 "" 补位，数组字段缺失用 [] 补位，不要 null。
 
 【conflicts 识别】
 conflict_type 仅取：
 - distance: 两地距离过远不宜同日
-- opinion: warnings含"避雷/坑"且有 recommended_reasons
+- opinion: warnings 含"避雷/坑"且有 recommended_reasons
 - time_overload: 同时段候选>3
 - prerequisite: 需预约/季节限定/限工作日
-每个 conflict 含 items(名取自上面 items.name)、reason、suggestion。
+每个 conflict 含 items(名取自 items.name)、reason、suggestion。
 
 【itinerary_suggestion 排期】
-默认 2 天，items>12 可 3 天；同日地理就近；高 confidence 排 morning/afternoon；餐厅放用餐时段；每 slot 1-3 项；note 给实用建议。
-slot.items 中的地点名必须来自上面生成的 items.name。
+若用户偏好里指定了行程时长（X 天），则 itinerary_suggestion 必须严格输出 X 个 day，不多不少；未指定时按 items 数量判断（≤6 一天，7-12 两天，更多三天）。
+同日地理就近；高 confidence 排 morning/afternoon；餐厅放用餐时段；每 slot 1-3 项；note 给实用建议。
+slot.items 中的地点名必须来自 items.name。天数超过 2 时，可允许同一地点在不同天不同时段重复出现作为备选。
 
 严格 JSON 输出，无 markdown 无解释。`;
 

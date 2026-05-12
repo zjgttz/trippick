@@ -69,12 +69,12 @@ export function POICard({ item, hasConflict, compact }: Props) {
             </span>
             {item.source_count >= 2 && (
               <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-600">
-                {item.source_count} 篇推荐
+                {item.source_count} 篇笔记提到
               </span>
             )}
             {hasConflict && (
               <span className="rounded-full bg-warn-distance/10 px-2 py-0.5 text-xs text-warn-distance">
-                ⚡ 有冲突
+                ⚡ 需注意
               </span>
             )}
             {item.source === "ai_recommended" && (

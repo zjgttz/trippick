@@ -264,31 +264,21 @@ function AnalyzeInner() {
         <ConflictBanner conflicts={analysis.conflicts} />
       </section>
 
-      {/* POI 分组卡片 */}
+      {/* 推荐地点分组卡片：推荐度 <60 的默认收起 */}
       <section className="mt-8 space-y-8">
         {TYPE_ORDER.map((t) => {
           const arr = grouped?.get(t);
           if (!arr || arr.length === 0) return null;
           const meta = TYPE_META[t];
           return (
-            <div key={t}>
-              <h2 className="flex items-center gap-2 text-lg font-semibold">
-                <span>{meta.icon}</span>
-                <span>{meta.label}</span>
-                <span className="text-sm font-normal text-ink-500">
-                  · {arr.length} 项
-                </span>
-              </h2>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {arr.map((it) => (
-                  <POICard
-                    key={it.name}
-                    item={it}
-                    hasConflict={conflictItems.has(it.name)}
-                  />
-                ))}
-              </div>
-            </div>
+            <POIGroupSection
+              key={t}
+              type={t}
+              icon={meta.icon}
+              label={meta.label}
+              items={arr}
+              conflictItems={conflictItems}
+            />
           );
         })}
       </section>
@@ -312,5 +302,62 @@ function AnalyzeInner() {
         </div>
       </div>
     </main>
+  );
+}
+
+// 一个分组区域：推荐度≥0 默认展示，<60 默认收起
+const LOW_THRESHOLD = 60;
+
+function POIGroupSection({
+  type: _type,
+  icon,
+  label,
+  items,
+  conflictItems,
+}: {
+  type: POIType;
+  icon: string;
+  label: string;
+  items: POIItem[];
+  conflictItems: Set<string>;
+}) {
+  const [showLow, setShowLow] = useState(false);
+  const highItems = items.filter((it) => it.confidence_score >= LOW_THRESHOLD);
+  const lowItems = items.filter((it) => it.confidence_score < LOW_THRESHOLD);
+  // 如果所有地点都是低推荐度，首屏至少要有东西：那就默认全展
+  const allLow = highItems.length === 0 && lowItems.length > 0;
+  const visibleItems = allLow || showLow ? items : highItems;
+  const hiddenCount = allLow ? 0 : lowItems.length;
+
+  return (
+    <div>
+      <h2 className="flex items-center gap-2 text-lg font-semibold">
+        <span>{icon}</span>
+        <span>{label}</span>
+        <span className="text-sm font-normal text-ink-500">
+          · {items.length} 个
+        </span>
+      </h2>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {visibleItems.map((it) => (
+          <POICard
+            key={it.name}
+            item={it}
+            hasConflict={conflictItems.has(it.name)}
+          />
+        ))}
+      </div>
+      {hiddenCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowLow((v) => !v)}
+          className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white px-3.5 py-1.5 text-xs text-ink-700 ring-1 ring-ink-200 transition hover:ring-brand-300 hover:text-brand-600"
+        >
+          {showLow
+            ? `收起低热度备选 ↑`
+            : `显示其他 ${hiddenCount} 个低热度备选 ↓`}
+        </button>
+      )}
+    </div>
   );
 }

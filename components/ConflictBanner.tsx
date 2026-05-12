@@ -13,7 +13,7 @@ export function ConflictBanner({ conflicts }: Props) {
   if (!conflicts || conflicts.length === 0) {
     return (
       <div className="rounded-2xl bg-green-50 px-4 py-3 text-sm text-green-700 ring-1 ring-green-100">
-        ✓ 没有发现明显冲突，你的攻略组合很顺畅。
+        ✓ 没有发现明显问题，你的攻略组合很顺畅。
       </div>
     );
   }
@@ -30,7 +30,7 @@ export function ConflictBanner({ conflicts }: Props) {
           </span>
           <div>
             <div className="font-semibold">
-              发现 <span className="text-warn-distance">{conflicts.length}</span> 处可能冲突
+              发现 <span className="text-warn-distance">{conflicts.length}</span> 个需要注意的地方
             </div>
             <div className="text-xs text-ink-500">
               点开查看 AI 给出的建议，决策时可作参考

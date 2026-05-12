@@ -6,7 +6,18 @@ import {
   savePreferences,
   STYLE_OPTIONS,
   type UserPreferences,
+  type DurationKey,
 } from "@/lib/preferences";
+
+const DURATION_OPTIONS: Array<{ value: DurationKey; label: string }> = [
+  { value: "any", label: "随意" },
+  { value: "day1", label: "🌅 一日游" },
+  { value: "day2", label: "🌙 两日一夜" },
+  { value: "day3", label: "🌙 三日两夜" },
+  { value: "day4", label: "🌙 四日三夜" },
+  { value: "week1", label: "🗓️ 一周游" },
+  { value: "week_plus", label: "🌍 一周以上" },
+];
 
 const BUDGET_OPTIONS: Array<{ value: UserPreferences["budget"]; label: string }> = [
   { value: "any", label: "随意" },
@@ -39,7 +50,12 @@ export function PreferencePanel({ onChange, defaultOpen = false }: Props) {
     setPrefs(p);
     onChange?.(p);
     // 检测是否之前存过偏好,有则自动展开
-    if (p.budget !== "any" || p.party_size !== "any" || p.styles.length > 0) {
+    if (
+      p.budget !== "any" ||
+      p.party_size !== "any" ||
+      (p.duration && p.duration !== "any") ||
+      p.styles.length > 0
+    ) {
       setOpen(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -65,6 +81,7 @@ export function PreferencePanel({ onChange, defaultOpen = false }: Props) {
   const hasAny =
     prefs.budget !== "any" ||
     prefs.party_size !== "any" ||
+    (prefs.duration && prefs.duration !== "any") ||
     prefs.styles.length > 0;
 
   return (
@@ -88,6 +105,26 @@ export function PreferencePanel({ onChange, defaultOpen = false }: Props) {
 
       {open && (
         <div className="border-t border-ink-100 px-4 py-3 space-y-3">
+          <div>
+            <div className="mb-1.5 text-xs text-ink-500">行程时长</div>
+            <div className="flex flex-wrap gap-1.5">
+              {DURATION_OPTIONS.map((d) => (
+                <button
+                  key={d.value}
+                  type="button"
+                  onClick={() => update({ duration: d.value })}
+                  className={`rounded-full px-3 py-1 text-xs ring-1 transition ${
+                    (prefs.duration ?? "any") === d.value
+                      ? "bg-brand-500 text-white ring-brand-500"
+                      : "bg-white text-ink-700 ring-ink-200 hover:ring-brand-200"
+                  }`}
+                >
+                  {d.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div>
             <div className="mb-1.5 text-xs text-ink-500">预算</div>
             <div className="flex flex-wrap gap-1.5">
@@ -155,7 +192,7 @@ export function PreferencePanel({ onChange, defaultOpen = false }: Props) {
 
           {hasAny && (
             <p className="text-xs text-ink-500">
-              ✨ AI 会根据这些偏好优先推荐你可能喜欢的 POI。
+              ✨ AI 会根据这些偏好优先推荐你可能喜欢的地点。
             </p>
           )}
         </div>
