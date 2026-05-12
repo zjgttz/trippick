@@ -151,14 +151,14 @@ async function tryHtml(
         const cleaned = stateMatch[1].replace(/:\s*undefined/g, ":null");
         const state = JSON.parse(cleaned);
 
-        // 路径 1（2025+ 新版页面结构）: state.noteData.data.noteData
+        // 路径 1（PC 新版直出）: state.noteData.data.noteData
         const nd1 = state?.noteData?.data?.noteData;
         if (nd1 && (nd1.desc || nd1.title)) {
           title = nd1.title || "";
           body = nd1.desc || "";
         }
 
-        // 路径 2（备份）: state.noteData.normalNotePreloadData
+        // 路径 2（PC 备用）: state.noteData.normalNotePreloadData
         if (!body) {
           const nd2 = state?.noteData?.normalNotePreloadData;
           if (nd2 && (nd2.desc || nd2.title)) {
@@ -167,7 +167,17 @@ async function tryHtml(
           }
         }
 
-        // 路径 3（旧版页面结构）: state.note.noteDetailMap[noteId].note
+        // 路径 3（移动版「启动 App 引导页」预加载，Vercel/数据中心 IP 实测命中）:
+        //   state.errorNoteData.normalNotePreloadData.{title, desc}
+        if (!body) {
+          const nd3 = state?.errorNoteData?.normalNotePreloadData;
+          if (nd3 && (nd3.desc || nd3.title)) {
+            title = title || nd3.title || "";
+            body = nd3.desc || "";
+          }
+        }
+
+        // 路径 4（旧版结构）: state.note.noteDetailMap[noteId].note
         if (!body) {
           const noteMap = state?.note?.noteDetailMap || state?.noteDetailMap || {};
           for (const k in noteMap) {
