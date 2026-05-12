@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function Home() {
   return (
@@ -10,11 +11,19 @@ export default function Home() {
 
       {/* 顶栏 */}
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-        <div className="flex items-center gap-2">
-          <div className="grid h-9 w-9 place-items-center rounded-xl bg-brand-500 text-white font-bold shadow-lg shadow-brand-500/30">
-            T
+        <div className="flex items-center gap-2.5">
+          <Image
+            src="/logo.png"
+            alt="选驴"
+            width={40}
+            height={40}
+            priority
+            className="h-10 w-10"
+          />
+          <div className="flex flex-col leading-tight">
+            <span className="text-lg font-bold tracking-tight">选驴</span>
+            <span className="text-[10px] font-medium text-ink-500 tracking-widest">TRIPPICK</span>
           </div>
-          <span className="text-lg font-semibold tracking-tight">TripPick</span>
         </div>
         <nav className="hidden md:flex items-center gap-6 text-sm text-ink-700">
           <a href="#how" className="hover:text-ink-900">怎么用</a>

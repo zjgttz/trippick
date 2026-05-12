@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 
 const STEPS = [
-  { label: "正在读取攻略内容", icon: "📖" },
-  { label: "正在提取地点和推荐理由", icon: "📍" },
-  { label: "正在合并重复地点", icon: "🔗" },
-  { label: "正在检测路线和偏好冲突", icon: "⚠️" },
-  { label: "正在生成决策板", icon: "✨" },
+  { label: "小驴正在驮攻略", icon: "📖" },
+  { label: "小驴正在挑地点和推荐理由", icon: "📍" },
+  { label: "小驴正在合并重复的地点", icon: "🔗" },
+  { label: "小驴正在看路线和偏好", icon: "⚠️" },
+  { label: "小驴摆出决策板", icon: "✨" },
 ];
 
 // 各步骤大致占多少秒（总和≈ 120s，实际 AI 耗时 1-2 分钟）
@@ -54,7 +54,7 @@ export default function AnalyzingOverlay({ show }: { show: boolean }) {
         <div className="flex items-center gap-3">
           <span className="inline-block h-8 w-8 animate-spin rounded-full border-[3px] border-brand-500/30 border-t-brand-500" />
           <div>
-            <h2 className="text-lg font-bold text-ink-900">AI 正在分析你的攻略</h2>
+            <h2 className="text-lg font-bold text-ink-900">小驴正在帮你们对答案</h2>
             <p className="mt-0.5 text-xs text-ink-500">
               预计 1–2 分钟 · 已用 {formatElapsed(elapsed)}
             </p>
@@ -111,7 +111,7 @@ export default function AnalyzingOverlay({ show }: { show: boolean }) {
 
         {elapsed >= 120000 && (
           <p className="mt-4 rounded-xl bg-accent-50 px-3 py-2 text-xs text-ink-700 ring-1 ring-accent-200">
-            稍微久了一点，AI 可能在处理较多内容，再等等就好。
+小驴有点累了，这批攻略量有点大，再等一下下。
           </p>
         )}
       </div>
