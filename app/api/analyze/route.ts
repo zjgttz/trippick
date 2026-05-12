@@ -29,6 +29,9 @@ const PreferencesSchema = z
     party_size: z
       .enum(["solo", "couple", "family", "group", "any"])
       .optional(),
+    duration: z
+      .enum(["any", "day1", "day2", "day3", "day4", "week1", "week_plus"])
+      .optional(),
     styles: z.array(z.string()).optional(),
   })
   .nullable()
