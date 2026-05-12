@@ -9,28 +9,17 @@
  * - conflict_type 枚举值在 prompt 中明确列举
  */
 
-export const EXTRACT_SYSTEM_PROMPT = `你是"小红书旅行攻略结构化提取助手"。
+export const EXTRACT_SYSTEM_PROMPT = `从小红书旅行笔记抽取结构化 POI。
 
-任务：用户会粘贴若干篇小红书旅行笔记原文，你需要：
-1. 自动识别目的地（destination）
-2. 推断这趟旅行的风格标签（trip_style，2-4 个）
-3. 提取所有出现的地点（景点/餐厅/住宿/交通/其他），合并同一地点的多次出现
-4. 为每个地点计算 source_count（出现在几篇笔记中）和 confidence_score（0-100）
+输出字段：destination、trip_style(2-4个)、items[]。每个 item 含 source_count(出现笔记数) 和 confidence_score(0-100)。
 
-confidence_score 评分依据：
-- 出现频次：40%（出现笔记数越多分越高）
-- 情绪强度：30%（"强烈推荐""一定要去""绝美"等加分；"踩雷""避雷"减分）
-- 推荐一致性：30%（多篇评价方向是否一致）
+confidence_score = 出现频次40% + 情绪强度30%(强推+/踩雷-) + 评价一致性30%。
 
-合并规则：
-- 名称相同或仅大小写/标点差异的视为同一地点
-- "灵隐寺" 与 "灵隐寺景区" 视为同一项
-- 同类但明确不同的店铺/景点保留为独立条目
-- recommended_reasons 取多篇并集去重，warnings 同理
+合并：同名或仅标点差异视为同项（如"灵隐寺"="灵隐寺景区"）；recommended_reasons/warnings 取并集去重。
 
-type 枚举严格使用：景点 / 餐厅 / 住宿 / 交通 / 其他
+type 仅可取：景点/餐厅/住宿/交通/其他。
 
-输出严格 JSON，禁止任何 markdown 包裹、不要解释文字。`;
+严格 JSON 输出，无 markdown 无解释。`;
 
 // 精简到最小：仅展示 1 个完整 POI 字段示例，节省 ~300 tokens
 export const EXTRACT_FEW_SHOT = `输出格式（严格按此字段名）：
@@ -56,36 +45,19 @@ ${noteSection}`;
 
 // ============ 冲突 + 排期 Prompt ============
 
-export const CONFLICTS_SYSTEM_PROMPT = `你是"旅行行程冲突分析助手"。
+export const CONFLICTS_SYSTEM_PROMPT = `分析 POI items 的冲突并生成排期。
 
-输入：已经从多篇小红书笔记中抽取出的 POI items 列表（JSON 形式）。
-输出：两个字段
-- conflicts：识别到的冲突列表
-- itinerary_suggestion：基于这些 items 给出的推荐排期（Day 1 / Day 2，每天分 morning / afternoon / evening）
+conflict_type 仅可取：
+- distance: 两地距离过远不宜同日（基于城市地理常识）
+- opinion: 同一地点存在正反评价（warnings 含"避雷/坑"且有 recommended_reasons）
+- time_overload: 同时段候选 > 3 个
+- prerequisite: 需预约/季节限定/限工作日（warnings 含"预约/限时/季节"）
 
-conflict_type 严格使用以下 4 个枚举值：
-- "distance"：两地物理距离过远，不适合同一天
-- "opinion"：不同笔记对同一地点评价相反
-- "time_overload"：某时段候选安排过满（同一时段建议项 > 3 个）
-- "prerequisite"：有前置条件（需要预约、特定季节限定、仅限工作日等）
+每个 conflict 必须含 items(名称取自传入 items.name)、reason、suggestion。
 
-冲突识别规则：
-- 利用你对该城市的地理知识判断 distance（如杭州西湖与良渚相距约 30 公里）
-- warnings 字段中含"避雷/坑/不推荐"且 recommended_reasons 同时存在 → opinion
-- 多个地点 suggested_time 都在同一时段 → time_overload
-- warnings 含"预约/限时/季节"等关键词 → prerequisite
+itinerary_suggestion：默认 2 天，items>12 可排 3 天；同日地理就近；高 confidence 排 morning/afternoon；餐厅放用餐时段；每 slot 1-3 项；note 给实用建议。
 
-每个 conflict 必须包含 items（涉及地点名，必须来自传入的 items.name）、reason、suggestion。
-
-itinerary_suggestion 规则：
-- 默认排 2 天（Day 1 / Day 2），如果传入 items 数量超过 12 个可以排 3 天
-- 同一天内尽量地理上相近的地点放在一起
-- 高 confidence_score 的项目优先排进 morning / afternoon
-- 餐厅类排在用餐时段
-- 每个 slot 的 items 数量控制在 1-3 个
-- note 字段给出该时段的实用建议
-
-严格输出 JSON，禁止 markdown 包裹。`;
+严格 JSON 输出，无 markdown。`;
 
 // 精简：删去完整 few-shot 示例，仅保留字段结构说明，节省 ~500 tokens
 export const CONFLICTS_FEW_SHOT = `输出 JSON 结构（严格按此格式）：
