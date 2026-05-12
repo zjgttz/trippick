@@ -11,18 +11,20 @@ export default function Home() {
 
       {/* 顶栏 */}
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
-        <div className="flex items-center gap-2.5">
-          <Image
-            src="/logo.png"
-            alt="选驴"
-            width={40}
-            height={40}
-            priority
-            className="h-10 w-10"
-          />
-          <div className="flex flex-col leading-tight">
-            <span className="text-lg font-bold tracking-tight">选驴</span>
-            <span className="text-[10px] font-medium text-ink-500 tracking-widest">TRIPPICK</span>
+        <div className="flex items-center gap-3">
+          <div className="relative h-11 w-11 overflow-hidden rounded-full bg-ink-50 ring-1 ring-ink-100">
+            <Image
+              src="/logo.png"
+              alt="选驴"
+              width={88}
+              height={88}
+              priority
+              className="absolute left-1/2 top-[8%] h-[88%] w-auto -translate-x-1/2 object-contain"
+            />
+          </div>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-xl font-bold tracking-tight text-ink-900">选驴</span>
+            <span className="text-[11px] font-medium text-ink-400 tracking-[0.15em]">TripPick</span>
           </div>
         </div>
         <nav className="hidden md:flex items-center gap-6 text-sm text-ink-700">
