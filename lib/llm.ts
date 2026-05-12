@@ -134,6 +134,11 @@ async function callOpenRouter(
       model,
       temperature,
       response_format: { type: "json_object" },
+      // 显式指定 provider 顺序，避开对香港账户拒绝 ToS 的 provider（如部分 Google 节点）
+      provider: {
+        order: ["DeepInfra", "Alibaba", "Together", "Novita", "SiliconFlow"],
+        allow_fallbacks: true,
+      },
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
