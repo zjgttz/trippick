@@ -66,8 +66,46 @@ async function getCityBbox(city: string): Promise<string | null> {
   return viewbox;
 }
 
+/**
+ * 中文 POI 名清洗，生成多个查询候选 —— Nominatim 对中文 POI 命中率较低，
+ * 原始名查不到时，依次试：括号外主名、括号内别名、拿掉“店/馆/馆”尾缀等。
+ */
+function buildNameCandidates(name: string): string[] {
+  const candidates = new Set<string>([name]);
+  // 处理中文括号：“断桥（断桥残雪）” → “断桥残雪”（括号内为别名/正式名，优先查）+ “断桥”
+  const zhParen = name.match(/^(.+?)（(.+?)）\s*$/);
+  if (zhParen) {
+    candidates.add(zhParen[2]!.trim()); // 括号内
+    candidates.add(zhParen[1]!.trim()); // 括号外
+  }
+  // 同样处理 ASCII 括号
+  const enParen = name.match(/^(.+?)\((.+?)\)\s*$/);
+  if (enParen) {
+    candidates.add(enParen[2]!.trim());
+    candidates.add(enParen[1]!.trim());
+  }
+  return Array.from(candidates);
+}
+
 /** 在 city bbox 内查 POI。命中返回坐标；查不到返回 null。 */
 async function geocodePOI(
+  name: string,
+  city: string,
+  viewbox: string | null,
+): Promise<{ lat: number; lng: number } | null> {
+  // 多个名字候选依次试，首个命中即返回
+  const candidates = buildNameCandidates(name);
+  for (let i = 0; i < candidates.length; i++) {
+    const candidate = candidates[i]!;
+    const result = await geocodePOIWithName(candidate, city, viewbox);
+    if (result) return result;
+    // 候选间隔 350ms 避免累计超 Nominatim 1 req/s（batch 内并行 5 个，几个候选串行在同个任务里，总体负载可控）
+    if (i < candidates.length - 1) await sleep(350);
+  }
+  return null;
+}
+
+async function geocodePOIWithName(
   name: string,
   city: string,
   viewbox: string | null,
