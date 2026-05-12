@@ -12,16 +12,14 @@ export default function Home() {
       {/* 顶栏 */}
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
         <div className="flex items-center gap-2.5">
-          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-brand-500 shadow-md shadow-brand-500/25">
-            <Image
-              src="/logo.png"
-              alt="选驴"
-              width={36}
-              height={36}
-              priority
-              className="h-8 w-8 object-contain"
-            />
-          </div>
+          <Image
+            src="/logo.png"
+            alt="选驴"
+            width={44}
+            height={44}
+            priority
+            className="h-11 w-11 object-contain"
+          />
           <span className="text-xl font-bold tracking-tight text-ink-900">选驴 TripPick</span>
         </div>
         <nav className="hidden md:flex items-center gap-6 text-sm text-ink-700">
