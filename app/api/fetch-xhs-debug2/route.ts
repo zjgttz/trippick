@@ -30,7 +30,19 @@ export async function GET() {
       htmlLen: html.length,
       finalUrl: resp.url,
       stateLen: state?.length || 0,
-      stateSample: state ? state.slice(0, 3000) : null,
+      stateHasNoteData: state ? /"noteData"/.test(state) : false,
+      stateHasDesc: state ? /"desc"/.test(state) : false,
+      stateHasTitle: state ? /"title"/.test(state) : false,
+      stateHasDeepLink: state ? /noteId|note_id/.test(state) : false,
+      htmlHasDesc: /"desc":"/.test(html),
+      // 看 HTML 里有没有 noteId 相关内容
+      noteIdPosInHtml: html.indexOf('69dba1b3000000001e00ecc6'),
+      // og:meta
+      ogTitle: html.match(/<meta\s+(?:property|name)=["']og:title["']\s+content=["']([^"']+)["']/i)?.[1] || null,
+      ogDesc: html.match(/<meta\s+(?:property|name)=["']og:description["']\s+content=["']([^"']+)["']/i)?.[1] || null,
+      // state 尾部（可能有 noteData）
+      stateTail: state ? state.slice(-3000) : null,
+      stateSample: state ? state.slice(0, 1500) : null,
       headers: Object.fromEntries(resp.headers.entries()),
     });
   } catch (e) {
