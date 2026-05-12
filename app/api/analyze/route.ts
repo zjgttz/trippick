@@ -128,7 +128,6 @@ export async function POST(req: Request) {
         stage: err.stage,
         message:
           "AI 分析暂时不可用，TripPick 已自动为你切换到示例分析结果。",
-        debug: err.message, // 临时
         should_fallback: true,
       },
       { status: 200 } // 故意 200，让前端走 fallback 而不是报错
