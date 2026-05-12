@@ -20,7 +20,7 @@ const STATUS_BTNS: Array<{
 }> = [
   {
     status: "accepted",
-    label: "去",
+    label: "想去",
     icon: "✅",
     accent: "hover:bg-brand-50 hover:text-brand-600",
     active: "bg-brand-500 text-white ring-brand-500",
@@ -34,7 +34,7 @@ const STATUS_BTNS: Array<{
   },
   {
     status: "rejected",
-    label: "不去",
+    label: "跳过",
     icon: "❌",
     accent: "hover:bg-ink-100 hover:text-ink-900",
     active: "bg-ink-700 text-white ring-ink-700",

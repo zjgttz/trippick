@@ -10,10 +10,10 @@ import {
 } from "@/lib/store";
 import { TIME_SLOT_LABEL, type ItineraryDay, type TimeSlot } from "@/lib/schema";
 import { reorderItineraryByGeo } from "@/lib/reorder-by-geo";
-import { buildShareURL, readPartnerFromURL } from "@/lib/share";
+import { readPartnerFromURL } from "@/lib/share";
 import { TripMap, type MapPOI } from "@/components/TripMap";
 import { useRealtimeSync } from "@/lib/use-realtime-sync";
-import { buildTripURL } from "@/lib/realtime-sync";
+import { buildTripURL, getOrCreateTripId } from "@/lib/realtime-sync";
 
 const SLOTS: TimeSlot[] = ["morning", "afternoon", "evening"];
 
@@ -346,12 +346,11 @@ function ItineraryInner() {
   }, [analysis, accepted, coords, itineraryToShow]);
 
   function handleShare() {
-    // 点击邀请按钮 → 启动同步。hook 里会创建或复用 tripId。
+    // 点击邀请按钮 → 启动同步。直接同步拿 tripId，避免 hook useEffect 异步延迟。
     if (!coopEnabled) setCoopEnabled(true);
-    // v2.0：优先用 tripId 短链（同源多标签能实时同步），并保留 base64 fallback
-    const url = tripId
-      ? buildTripURL(tripId)
-      : buildShareURL(decisions);
+    // 同步获取（读 URL ?trip= / localStorage / 新建），保证第一次点击就出 ?trip= 链接
+    const id = getOrCreateTripId();
+    const url = buildTripURL(id);
     setShareURL(url);
     navigator.clipboard.writeText(url).then(
       () => {
@@ -365,7 +364,8 @@ function ItineraryInner() {
   if (!analysis) {
     return (
       <main className="mx-auto min-h-screen max-w-2xl px-6 py-16 text-center">
-        <h1 className="text-2xl font-bold">还没有行程数据</h1>
+        <h1 className="text-2xl font-bold">还没有行程</h1>
+        <p className="mt-2 text-ink-700">先去决策板选几个想去的地方，或者一键用示例看看效果。</p>
         <div className="mt-6 flex justify-center gap-3">
           <Link
             href="/input"
@@ -620,7 +620,7 @@ function ItineraryInner() {
         <div ref={timelineRef} className="space-y-6 bg-white/0">
         {itineraryToShow.length === 0 && (
           <div className="rounded-2xl bg-white p-10 text-center text-ink-500 ring-1 ring-ink-100">
-            还没有任何已确认的地点，先回去选几个 ✅
+            还没选地方？回上一页点 ✅ 把想去的加进来
           </div>
         )}
         {activeTab === "timeline" && itineraryToShow.map((day) => (

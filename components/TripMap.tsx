@@ -267,10 +267,18 @@ export function TripMap({ pois, city: _city }: TripMapProps) {
           )}
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <LegendDot color={DAY_COLORS[1]!} label="Day 1" />
-          <LegendDot color={DAY_COLORS[2]!} label="Day 2" />
-          <LegendDot color={DAY_COLORS[3]!} label="Day 3" />
-          <LegendDot color={AI_COLOR} label="AI 补充" />
+          {Array.from(new Set(valid.map((p) => p.day).filter((d): d is number => typeof d === "number")))
+            .sort((a, b) => a - b)
+            .map((d) => (
+              <LegendDot
+                key={d}
+                color={DAY_COLORS[d] ?? DAY_COLORS[1]!}
+                label={`Day ${d}`}
+              />
+            ))}
+          {valid.some((p) => p.source === "ai_recommended") && (
+            <LegendDot color={AI_COLOR} label="AI 补充" />
+          )}
         </div>
       </div>
 

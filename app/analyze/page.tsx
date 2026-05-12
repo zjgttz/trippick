@@ -149,8 +149,8 @@ function AnalyzeInner() {
   if (!analysis) {
     return (
       <main className="mx-auto min-h-screen max-w-2xl px-6 py-16 text-center">
-        <h1 className="text-2xl font-bold">还没有分析数据</h1>
-        <p className="mt-2 text-ink-700">先去输入页粘贴几篇攻略，或一键用示例数据。</p>
+        <h1 className="text-2xl font-bold">先粘几篇攻略过来</h1>
+        <p className="mt-2 text-ink-700">把你收藏的小红书笔记粘过来，我帮你整理重点。没现成数据也可以一键用示例。</p>
         <div className="mt-6 flex justify-center gap-3">
           <Link
             href="/input"
@@ -231,6 +231,31 @@ function AnalyzeInner() {
           </div>
         )}
       </header>
+
+      {/* v2.2 P1: 决策板顶部 Summary 卡 — 先给结果再给细节 */}
+      {!isFallback && (
+        <section className="mt-6 rounded-2xl bg-white p-4 ring-1 ring-ink-100 sm:p-5">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl" aria-hidden>📋</span>
+            <div className="flex-1 text-sm leading-relaxed text-ink-700">
+              <p>
+                共整理出 <span className="font-bold text-brand-500">{allItems.length}</span> 个候选地点
+                {(() => {
+                  const high = allItems.filter((it) => it.confidence_score >= 70).length;
+                  return high > 0 ? <>，其中 <span className="font-bold text-brand-500">{high}</span> 个被多次推荐</> : null;
+                })()}
+                {analysis.conflicts.length > 0 && (
+                  <>，发现 <span className="font-bold text-accent-600">{analysis.conflicts.length}</span> 处需要注意的地方</>
+                )}
+                。
+              </p>
+              <p className="mt-1.5 text-xs text-ink-500">
+                点 ✅ 把想去的加进行程，点 ❌ 跳过；推荐度低的已自动折叠。
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* v2.0 修复: Fallback 显眼警告 — 用户必须知道这不是真的 AI 分析 */}
       {isFallback && (

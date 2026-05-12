@@ -41,7 +41,7 @@ interface Props {
   defaultOpen?: boolean;
 }
 
-export function PreferencePanel({ onChange, defaultOpen = false }: Props) {
+export function PreferencePanel({ onChange, defaultOpen = true }: Props) {
   const [prefs, setPrefs] = useState<UserPreferences | null>(null);
   const [open, setOpen] = useState(defaultOpen);
 

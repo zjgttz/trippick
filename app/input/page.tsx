@@ -12,6 +12,7 @@ import {
   type UserPreferences,
 } from "@/lib/preferences";
 import { parseXhsShare, looksLikeXhsShare } from "@/lib/parse-xhs-share";
+import AnalyzingOverlay from "@/components/AnalyzingOverlay";
 
 const MIN_LEN = 20;
 const MAX_LEN = 3500;
@@ -237,6 +238,7 @@ export default function InputPage() {
 
   return (
     <main className="mx-auto min-h-screen max-w-3xl px-6 py-10">
+      <AnalyzingOverlay show={loading} />
       {/* 顶栏 */}
       <div className="flex items-center justify-between">
         <Link href="/" className="text-sm text-ink-500 hover:text-ink-900">
