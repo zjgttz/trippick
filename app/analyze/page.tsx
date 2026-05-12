@@ -231,6 +231,34 @@ function AnalyzeInner() {
         )}
       </header>
 
+      {/* v2.0 修复: Fallback 显眼警告 — 用户必须知道这不是真的 AI 分析 */}
+      {isFallback && (
+        <section className="mt-6 rounded-2xl border-2 border-amber-300 bg-amber-50 p-4 sm:p-5">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl" aria-hidden>⚠️</span>
+            <div className="flex-1">
+              <h3 className="text-base font-bold text-amber-900">
+                AI 没能成功分析你的笔记
+              </h3>
+              <p className="mt-1 text-sm text-amber-800">
+                下面展示的是<span className="font-semibold">演示样本数据</span>，不是基于你刚才粘贴的内容生成的。可能原因：AI 调用超时、配额暂时不可用、或网络波动。
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Link
+                  href="/input"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-700"
+                >
+                  ↻ 回到输入页重试
+                </Link>
+                <span className="text-xs text-amber-700 self-center">
+                  （或继续浏览下方示例，体验完整功能）
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* 冲突 Banner */}
       <section className="mt-6">
         <ConflictBanner conflicts={analysis.conflicts} />

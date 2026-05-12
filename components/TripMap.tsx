@@ -76,8 +76,25 @@ export function TripMap({ pois, city }: TripMapProps) {
             ? [valid[0]!.lat, valid[0]!.lng]
             : [35.0, 105.0]; // 中国大致中心
 
-        const map = L.map(containerRef.current).setView(center, valid.length > 0 ? 12 : 4);
+        // v2.0 修复：移动端体验优化 — 默认禁用滚轮/两指手势避免误触，点击地图后启用
+        const isMobile = typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
+        const map = L.map(containerRef.current, {
+          scrollWheelZoom: !isMobile,
+          touchZoom: true,
+          tap: true,
+          // 手机上默认不拖拽，点击启用（避免页面滚动被拦截）
+          dragging: !isMobile,
+        }).setView(center, valid.length > 0 ? 12 : 4);
         mapRef.current = map;
+
+        // 手机点击地图后才启用拖拽
+        if (isMobile) {
+          const enableDragging = () => {
+            map.dragging.enable();
+            containerRef.current?.removeEventListener("click", enableDragging);
+          };
+          containerRef.current.addEventListener("click", enableDragging);
+        }
 
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
           maxZoom: 19,
@@ -90,6 +107,8 @@ export function TripMap({ pois, city }: TripMapProps) {
           // 自定义 icon: ai_recommended 用紫色，其他用品牌色橙
           const isAI = p.source === "ai_recommended";
           const color = isAI ? "#9333ea" : "#f97316";
+          // v2.0 修复：手机上名称太长会重叠，限制最大宽度 + 省10 字截断
+          const displayName = p.name.length > 10 ? p.name.slice(0, 9) + "…" : p.name;
           const icon = L.divIcon({
             className: "trippick-marker",
             html: `
@@ -99,13 +118,16 @@ export function TripMap({ pois, city }: TripMapProps) {
                 border:2px solid white;
                 box-shadow:0 2px 8px rgba(0,0,0,0.2);
                 border-radius:999px;
-                padding:4px 10px;
-                font-size:12px;
+                padding:3px 8px;
+                font-size:11px;
                 font-weight:600;
                 white-space:nowrap;
                 font-family:system-ui,sans-serif;
+                max-width:140px;
+                overflow:hidden;
+                text-overflow:ellipsis;
               ">
-                ${isAI ? "✨ " : ""}${escapeHtml(p.name)}
+                ${isAI ? "✨ " : ""}${escapeHtml(displayName)}
               </div>
             `,
             iconSize: [0, 0],
@@ -164,11 +186,15 @@ export function TripMap({ pois, city }: TripMapProps) {
 
   return (
     <div className="space-y-2">
+      {/* v2.0 修复：手机高度 320px 避免占满屏，桌面 480px */}
       <div
         ref={containerRef}
-        className="h-[480px] w-full overflow-hidden rounded-2xl ring-1 ring-ink-100"
+        className="h-[320px] w-full overflow-hidden rounded-2xl ring-1 ring-ink-100 sm:h-[480px]"
         style={{ background: "#f8fafc" }}
       />
+      <p className="text-center text-xs text-ink-400 sm:hidden">
+        👆 点击地图后可拖动、双指缩放
+      </p>
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-ink-500">
         <div>
           地图基于 OpenStreetMap，标注了 {validCount} 个地点

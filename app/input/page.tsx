@@ -123,15 +123,12 @@ export default function InputPage() {
 
       setError("AI 分析失败，请稍后重试");
     } catch (e) {
-      // 网络异常也走 fallback
-      try {
-        const mockRes = await fetch("/mock-result.json");
-        const mock = (await mockRes.json()) as AnalysisResult;
-        setAnalysis({ ...mock, is_mock: true });
-        router.push("/analyze?fallback=1");
-      } catch {
-        setError("网络异常，请检查后重试");
-      }
+      // v2.0 修复：网络异常直接报错，不静默填示例数据让用户误以为是 AI 结果
+      setError(
+        e instanceof Error
+          ? `网络异常：${e.message}。请检查网络后重试。`
+          : "网络异常，请检查后重试",
+      );
     } finally {
       setLoading(false);
     }
