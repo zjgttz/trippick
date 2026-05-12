@@ -26,6 +26,27 @@ type CoordMap = Record<string, Coord | null>;
 
 const SLOTS: TimeSlot[] = ["morning", "afternoon", "evening"];
 
+/** 每个时段的硬容量上限（景点+餐厅计）。上午/下午 3、晚上 2，避免 LLM 塑上午塑 5 个走不完的情况。 */
+const SLOT_CAPACITY_MAX: Record<TimeSlot, number> = {
+  morning: 3,
+  afternoon: 3,
+  evening: 2,
+};
+
+/** 离群点阈值：距离主群重心 > 8km 的点会被拿出来单独占一个 slot。 */
+const OUTLIER_DISTANCE_KM = 8;
+
+/** 计算一组点的几何中心（均值）。 */
+function centerOf(coords: Coord[]): Coord {
+  let lat = 0;
+  let lng = 0;
+  for (const c of coords) {
+    lat += c.lat;
+    lng += c.lng;
+  }
+  return { lat: lat / coords.length, lng: lng / coords.length };
+}
+
 /** Haversine 距离（公里）。同城几公里量级，精度够用。 */
 function distanceKm(a: Coord, b: Coord): number {
   const R = 6371;
@@ -107,8 +128,6 @@ function reorderDay(
     afternoon: { transport: [], customNoCoord: [], poolMembers: [], poolNoCoord: [], lodging: [] },
     evening: { transport: [], customNoCoord: [], poolMembers: [], poolNoCoord: [], lodging: [] },
   };
-  const slotCapacity: Record<TimeSlot, number> = { morning: 0, afternoon: 0, evening: 0 };
-
   for (const slot of day.slots) {
     const t = slot.time_slot;
     for (const name of slot.items) {
@@ -124,7 +143,6 @@ function reorderDay(
       } else if (hasCoord) {
         // 景点 / 餐厅 / 其他 + 有坐标
         buckets[t].poolMembers.push(name);
-        slotCapacity[t]++;
       } else {
         buckets[t].poolNoCoord.push(name);
       }
@@ -141,26 +159,51 @@ function reorderDay(
   // 有效坐标 < 2 → 不够算距离，原样返回
   if (allPool.length < 2) return day;
 
-  // 3. 选起点：morning 第一个有坐标的；没有就 afternoon 第一个；都没有就 evening 第一个
+  // 3. 【v2.1 增强】离群点检测：用中位数距离判别哪些点距离主群 > 8km，单独路由到下午/晚上
+  const allCoords = allPool.map((n) => coords[n]!).filter(Boolean);
+  const center = centerOf(allCoords);
+  const distances = allPool.map((n) => ({ name: n, dist: distanceKm(coords[n]!, center) }));
+  // 如果所有点都距离中心 > 8km，说明是均勺分布（不是“一主点 + outlier”），不拆
+  const mainPool = distances.filter((d) => d.dist <= OUTLIER_DISTANCE_KM).map((d) => d.name);
+  const outliers = distances.filter((d) => d.dist > OUTLIER_DISTANCE_KM).map((d) => d.name);
+  // 安全阈值：主群 ≥ 2 才认为拆出 outlier 是可靠的。否则全体当主池。
+  const finalMain = mainPool.length >= 2 ? mainPool : allPool;
+  const finalOutliers = mainPool.length >= 2 ? outliers : [];
+
+  // 4. 主池贪心最近邻
+  // 起点：主池里原本在 morning 的第一个点（保留 LLM “从哪开始”的语义）；没有就主池第一个
   const startName =
-    buckets.morning.poolMembers[0] ??
-    buckets.afternoon.poolMembers[0] ??
-    buckets.evening.poolMembers[0]!;
+    buckets.morning.poolMembers.find((n) => finalMain.includes(n)) ??
+    buckets.afternoon.poolMembers.find((n) => finalMain.includes(n)) ??
+    buckets.evening.poolMembers.find((n) => finalMain.includes(n)) ??
+    finalMain[0]!;
+  const orderedMain = nearestNeighborOrder(finalMain, coords, startName);
 
-  // 4. 贪心最近邻
-  const orderedPool = nearestNeighborOrder(allPool, coords, startName);
-
-  // 5. 按原 slot 容量切回时段（保持每个时段大致的地点数）
+  // 5. 【v2.1 增强】按硬容量上限填时段 + outlier 单独占半天
   const newPool: Record<TimeSlot, string[]> = { morning: [], afternoon: [], evening: [] };
   let cursor = 0;
+  // 先填主池到 morning（上限 3）
   for (const t of SLOTS) {
-    const cap = slotCapacity[t];
-    newPool[t] = orderedPool.slice(cursor, cursor + cap);
-    cursor += cap;
+    const cap = SLOT_CAPACITY_MAX[t];
+    // outlier 会独占 1 个位置，预留：下午优先留给 outlier
+    let availableCap = cap;
+    if (t === "afternoon" && finalOutliers.length > 0) {
+      availableCap = Math.max(1, cap - finalOutliers.length); // 给 outlier 留位
+    }
+    newPool[t] = orderedMain.slice(cursor, cursor + availableCap);
+    cursor += availableCap;
   }
-  // 末尾兜底：万一切剩了（理论上不会），追加到 evening
-  if (cursor < orderedPool.length) {
-    newPool.evening.push(...orderedPool.slice(cursor));
+  // 主池还没填完？追加到 afternoon 末尾（超出容量）
+  if (cursor < orderedMain.length) {
+    newPool.afternoon.push(...orderedMain.slice(cursor));
+  }
+  // outliers 填入 afternoon（首选）；若 afternoon 已满则 evening
+  for (const o of finalOutliers) {
+    if (newPool.afternoon.length < SLOT_CAPACITY_MAX.afternoon) {
+      newPool.afternoon.push(o);
+    } else {
+      newPool.evening.push(o);
+    }
   }
 
   // 6. 组装回 slots：交通 → 自定义无坐标 → 景点/餐厅(重排后) → 景点/餐厅(无坐标) → 住宿(仅 evening)
