@@ -25,7 +25,7 @@ export class LLMError extends Error {
 }
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const OPENROUTER_DEFAULT_MODEL = "google/gemini-2.5-pro";
+const OPENROUTER_DEFAULT_MODEL = "qwen/qwen3-235b-a22b-2507";
 const GEMINI_DEFAULT_MODEL = "gemini-2.5-flash";
 const MAX_RETRIES = 3;
 /** 单次 LLM 调用超时（毫秒）。Hobby plan 函数总上限 60s，单次控制在 25s 以内避免挂死。 */
