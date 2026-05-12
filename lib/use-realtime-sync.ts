@@ -10,49 +10,69 @@ import {
   type SyncEvent,
 } from "./realtime-sync";
 import { useTripPickStore, type DecisionStatus } from "./store";
+import type { AnalysisResult } from "./schema";
 
 /**
- * 在页面挂载时启用本机多标签实时协同。
+ * v2.0 跨设备实时协同 Hook
  *
- * 功能：
- *  1. 自动 connect 到 tripId 频道
- *  2. 监听到伙伴的 decision 改动 → 更新 partnerDecisions
- *  3. 自己 decisions 变化（不是来自远端的）→ broadcast 全量快照
- *  4. 暴露 "在线人数"（其他标签页发过 hello 的 clientId 计数）
+ * 两层同步：
+ *   1. BroadcastChannel（同源标签页，~10ms 延迟）—— 浏览器内多 tab 演示
+ *   2. KV polling（跨设备，2s 间隔）—— 真正的多设备/多手机协同
+ *
+ * 数据流：
+ *   本地改 decisions → debounce → PUT /api/trip/[id] → 远端 polling 命中新版本 → 更新 partnerDecisions
  */
+
+const POLL_INTERVAL_MS = 2500;
+const PUSH_DEBOUNCE_MS = 600;
+
 export function useRealtimeSync(enabled: boolean = true): {
   tripId: string;
   peerCount: number;
   lastPeerUpdate: number | null;
+  kvConnected: boolean;
 } {
   const decisions = useTripPickStore((s) => s.decisions);
   const setPartnerDecisions = useTripPickStore((s) => s.setPartnerDecisions);
-  const partnerDecisions = useTripPickStore((s) => s.partnerDecisions);
+  const analysis = useTripPickStore((s) => s.analysis);
+  const setAnalysis = useTripPickStore((s) => s.setAnalysis);
 
   const [tripId, setTripId] = useState("");
   const [peers, setPeers] = useState<Map<string, number>>(new Map());
   const [lastPeerUpdate, setLastPeerUpdate] = useState<number | null>(null);
+  const [kvConnected, setKvConnected] = useState(false);
 
-  // 标记本次 decisions 变化是不是收到远端事件触发的（避免广播回环）
+  // 避免回环：远端 patch 后短暂不广播 / 不推送
   const skipBroadcastRef = useRef(false);
+  // 客户端 ID（仅在浏览器存在）
+  const clientIdRef = useRef("");
+  // 远端最新版本号
+  const lastVersionRef = useRef(-1);
+  // pending 推送（debounce）
+  const pushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 初始化：connect
+  /* ---------- 初始化 trip_id 和 BroadcastChannel ---------- */
   useEffect(() => {
     if (!enabled) return;
     if (typeof window === "undefined") return;
     const id = getOrCreateTripId();
     setTripId(id);
+    // BroadcastChannel 同源同步（即时）
     connectTrip(id);
+    // 生成 clientId
+    if (!clientIdRef.current) {
+      clientIdRef.current = `c_${Math.random().toString(36).slice(2, 10)}`;
+    }
     return () => {
       disconnect();
+      if (pushTimerRef.current) clearTimeout(pushTimerRef.current);
     };
   }, [enabled]);
 
-  // 订阅远端事件
+  /* ---------- BroadcastChannel 监听（同源标签页） ---------- */
   useEffect(() => {
     if (!enabled) return;
     const off = onSync((e: SyncEvent) => {
-      // 维护 peer 列表
       setPeers((prev) => {
         const next = new Map(prev);
         next.set(e.clientId, Date.now());
@@ -61,15 +81,12 @@ export function useRealtimeSync(enabled: boolean = true): {
 
       if (e.type === "decision" && e.payload?.snapshot) {
         skipBroadcastRef.current = true;
-        // 把远端整张 decisions 表合并到 partnerDecisions
         setPartnerDecisions(e.payload.snapshot as Record<string, DecisionStatus>);
         setLastPeerUpdate(Date.now());
-        // 微任务后释放，避免下一次本地变化被吞
         queueMicrotask(() => {
           skipBroadcastRef.current = false;
         });
       } else if (e.type === "hello") {
-        // 新加入的标签页向它回复当前 decisions
         const my = useTripPickStore.getState().decisions;
         if (Object.keys(my).length > 0) {
           broadcast({
@@ -82,20 +99,113 @@ export function useRealtimeSync(enabled: boolean = true): {
     return off;
   }, [enabled, setPartnerDecisions]);
 
-  // 自己 decisions 变化 → 广播
+  /* ---------- KV polling（跨设备） ---------- */
+  useEffect(() => {
+    if (!enabled) return;
+    if (!tripId) return;
+
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    async function poll() {
+      try {
+        const sinceParam =
+          lastVersionRef.current >= 0 ? `?since=${lastVersionRef.current}` : "";
+        const res = await fetch(`/api/trip/${tripId}${sinceParam}`, {
+          cache: "no-store",
+        });
+        if (!res.ok) {
+          setKvConnected(false);
+          return;
+        }
+        setKvConnected(true);
+        const data = await res.json();
+        if (cancelled) return;
+        if (data.ok && data.changed && data.state) {
+          const state = data.state as {
+            version: number;
+            decisions: Record<string, string>;
+            analysis?: unknown;
+            last_client_id?: string;
+          };
+          lastVersionRef.current = state.version;
+          // 忽略自己刚推上去的版本
+          if (state.last_client_id !== clientIdRef.current) {
+            skipBroadcastRef.current = true;
+            setPartnerDecisions(state.decisions as Record<string, DecisionStatus>);
+            setLastPeerUpdate(Date.now());
+            // 如果伙伴推了分析结果且本地还没有 → 同步过来
+            if (state.analysis && !useTripPickStore.getState().analysis) {
+              setAnalysis(state.analysis as AnalysisResult);
+            }
+            queueMicrotask(() => {
+              skipBroadcastRef.current = false;
+            });
+            // 标记一个虚拟 peer（跨设备协同显示）
+            setPeers((prev) => {
+              const next = new Map(prev);
+              next.set(state.last_client_id || "kv_peer", Date.now());
+              return next;
+            });
+          }
+        }
+      } catch {
+        setKvConnected(false);
+      } finally {
+        if (!cancelled) {
+          timer = setTimeout(poll, POLL_INTERVAL_MS);
+        }
+      }
+    }
+
+    // 第一次立即拉一次
+    poll();
+
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [enabled, tripId, setPartnerDecisions, setAnalysis]);
+
+  /* ---------- 本地 decisions / analysis 变化 → 推 KV + BC ---------- */
   useEffect(() => {
     if (!enabled) return;
     if (skipBroadcastRef.current) return;
     if (!tripId) return;
-    // 只在有内容时广播，避免初始空对象触发
-    if (Object.keys(decisions).length === 0) return;
-    broadcast({
-      type: "decision",
-      payload: { name: "__sync__", status: "unset", snapshot: decisions },
-    });
-  }, [decisions, enabled, tripId]);
+    if (Object.keys(decisions).length === 0 && !analysis) return;
 
-  // 清理超过 60s 没活跃的 peer
+    // BroadcastChannel：即时广播（同源标签页）
+    if (Object.keys(decisions).length > 0) {
+      broadcast({
+        type: "decision",
+        payload: { name: "__sync__", status: "unset", snapshot: decisions },
+      });
+    }
+
+    // KV 推送 debounce
+    if (pushTimerRef.current) clearTimeout(pushTimerRef.current);
+    pushTimerRef.current = setTimeout(() => {
+      fetch(`/api/trip/${tripId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          decisions,
+          analysis,
+          client_id: clientIdRef.current,
+        }),
+      })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.ok && typeof d.version === "number") {
+            lastVersionRef.current = d.version;
+            setKvConnected(true);
+          }
+        })
+        .catch(() => setKvConnected(false));
+    }, PUSH_DEBOUNCE_MS);
+  }, [decisions, analysis, enabled, tripId]);
+
+  /* ---------- 清理 60s 内不活跃的 peer ---------- */
   useEffect(() => {
     const interval = setInterval(() => {
       setPeers((prev) => {
@@ -114,5 +224,6 @@ export function useRealtimeSync(enabled: boolean = true): {
     tripId,
     peerCount: peers.size,
     lastPeerUpdate,
+    kvConnected,
   };
 }
