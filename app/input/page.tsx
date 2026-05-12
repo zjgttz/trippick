@@ -276,24 +276,24 @@ export default function InputPage() {
       )}
 
       {/* 底部 CTA */}
-      <div className="mt-8 flex items-center justify-between gap-4">
-        <div className="text-xs text-ink-500">
-          已填写 <span className="font-semibold text-ink-900">{filled}</span> 篇 ·
-          最少 2 篇可分析
+      <div className="mt-8 flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1 text-xs text-ink-500">
+          已填写 <span className="font-semibold text-ink-900">{filled}</span> 篇
+          <span className="hidden sm:inline"> · 最少 2 篇可分析</span>
         </div>
         <button
           onClick={submit}
           disabled={!canSubmit}
-          className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 sm:px-6 sm:py-3 sm:text-base"
         >
           {loading ? (
             <>
               <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
-              AI 正在分析…
+              分析中…
             </>
           ) : (
             <>
-              分析这些攻略 <span aria-hidden>→</span>
+              开始分析 <span aria-hidden>→</span>
             </>
           )}
         </button>

@@ -49,10 +49,12 @@ export function ConflictBanner({ conflicts }: Props) {
                 key={i}
                 className={`rounded-xl px-3 py-2.5 ring-1 ${meta.bg} ${meta.ring}`}
               >
-                <div className={`flex items-center gap-2 text-sm font-semibold ${meta.color}`}>
-                  <span>{meta.icon}</span>
-                  <span>{meta.label}</span>
-                  <span className="rounded-full bg-white/70 px-2 py-0.5 text-xs font-normal text-ink-700">
+                <div className={`flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold ${meta.color}`}>
+                  <span className="inline-flex items-center gap-1 whitespace-nowrap">
+                    <span>{meta.icon}</span>
+                    <span>{meta.label}</span>
+                  </span>
+                  <span className="min-w-0 max-w-full truncate rounded-full bg-white/70 px-2 py-0.5 text-xs font-normal text-ink-700">
                     {c.items.slice(0, 3).join(" / ")}
                     {c.items.length > 3 ? "…" : ""}
                   </span>

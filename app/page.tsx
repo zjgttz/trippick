@@ -82,27 +82,27 @@ export default function Home() {
               </div>
               <div className="mt-5 space-y-3">
                 <div className="rounded-2xl bg-brand-50/60 p-4 ring-1 ring-brand-100">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold">法喜寺</span>
-                    <span className="rounded-full bg-brand-500 px-2 py-0.5 text-xs text-white">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="min-w-0 truncate font-semibold">法喜寺</span>
+                    <span className="shrink-0 whitespace-nowrap rounded-full bg-brand-500 px-2 py-0.5 text-xs text-white">
                       推荐 86
                     </span>
                   </div>
                   <div className="mt-2 text-xs text-ink-700">被 3 篇笔记反复推荐 · 拍照好看 / 氛围安静</div>
                 </div>
                 <div className="rounded-2xl bg-white p-4 ring-1 ring-ink-100">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold">良渚文化村</span>
-                    <span className="rounded-full bg-warn-distance/10 px-2 py-0.5 text-xs text-warn-distance">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="min-w-0 truncate font-semibold">良渚文化村</span>
+                    <span className="shrink-0 whitespace-nowrap rounded-full bg-warn-distance/10 px-2 py-0.5 text-xs text-warn-distance">
                       🗺️ 距离冲突
                     </span>
                   </div>
                   <div className="mt-2 text-xs text-ink-700">与法喜寺相距约 30km，不建议同一天上午</div>
                 </div>
                 <div className="rounded-2xl bg-white p-4 ring-1 ring-ink-100">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold">某网红咖啡店</span>
-                    <span className="rounded-full bg-warn-opinion/10 px-2 py-0.5 text-xs text-warn-opinion">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="min-w-0 truncate font-semibold">某网红咖啡店</span>
+                    <span className="shrink-0 whitespace-nowrap rounded-full bg-warn-opinion/10 px-2 py-0.5 text-xs text-warn-opinion">
                       ⚠️ 评价分歧
                     </span>
                   </div>
