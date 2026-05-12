@@ -7,7 +7,10 @@ import { SAMPLE_NOTES } from "@/lib/sample-notes";
 import { useTripPickStore } from "@/lib/store";
 import type { AnalysisResult } from "@/lib/schema";
 import { PreferencePanel } from "@/components/PreferencePanel";
-import type { UserPreferences } from "@/lib/preferences";
+import {
+  savePreferences,
+  type UserPreferences,
+} from "@/lib/preferences";
 import { parseXhsShare, looksLikeXhsShare } from "@/lib/parse-xhs-share";
 
 const MIN_LEN = 20;
@@ -23,6 +26,8 @@ export default function InputPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
+  // 示例偏好填充后用 key 强制 PreferencePanel 重 mount（重新 loadPreferences）
+  const [prefPanelKey, setPrefPanelKey] = useState(0);
   // v2.0 M3：每个输入框单独的「检测到小红书分享文案」提示
   const [parseHints, setParseHints] = useState<(string | null)[]>([null, null, null]);
   // v2.0 修复：每个输入框独立的「试试自动抓取」状态
@@ -127,7 +132,17 @@ export default function InputPage() {
   }
 
   function fillSample() {
+    // 1. 填示例笔记
     setNotes(SAMPLE_NOTES.map((n) => n.content));
+    // 2. 同时填示例偏好（杭州 2 日游 · 情侣 · 中等 · 美食/文化/自然）
+    //    写入 localStorage 再用 key 强制 PreferencePanel 重 mount，让面板内的 chip 选中状态同步更新
+    savePreferences({
+      duration: "day2",
+      budget: "mid",
+      party_size: "couple",
+      styles: ["美食", "文化", "自然"],
+    });
+    setPrefPanelKey((k) => k + 1);
   }
 
   async function submit() {
@@ -248,25 +263,28 @@ export default function InputPage() {
 
       {/* v2.0 新增：偏好面板 */}
       <div className="mt-6">
-        <PreferencePanel onChange={setPreferences} />
+        <PreferencePanel key={prefPanelKey} onChange={setPreferences} />
       </div>
 
-      {/* 示例 banner */}
+      {/* 示例 banner —— 实心按钮 + 醒目说明 */}
       <div className="mt-6 rounded-2xl bg-accent-50 p-4 ring-1 ring-accent-500/30">
-        <div className="flex items-start gap-3 text-sm text-ink-900">
-          <span>💡</span>
-          <div className="flex-1">
-            没有现成数据？
-            <button
-              onClick={fillSample}
-              className="ml-1 font-semibold text-brand-600 underline-offset-2 hover:underline"
-            >
-              一键填充 5 篇杭州示例攻略 →
-            </button>
-            <span className="ml-1 text-xs text-ink-500">
-              （会真正调用 AI 分析，让你体验完整链路）
-            </span>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-2 text-sm text-ink-900">
+            <span>💡</span>
+            <div>
+              <div className="font-semibold">没有现成数据？</div>
+              <div className="text-xs text-ink-600">
+                一键填充 5 篇杭州攻略 + 示例偏好（2 日游 · 情侣 · 中等预算），体验完整链路
+              </div>
+            </div>
           </div>
+          <button
+            type="button"
+            onClick={fillSample}
+            className="shrink-0 cursor-pointer rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-brand-600 transition hover:bg-brand-600 active:scale-[0.98]"
+          >
+            ✨ 一键填充示例
+          </button>
         </div>
       </div>
 
