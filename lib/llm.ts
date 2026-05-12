@@ -28,6 +28,24 @@ const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_DEFAULT_MODEL = "google/gemini-2.5-pro";
 const GEMINI_DEFAULT_MODEL = "gemini-2.5-flash";
 const MAX_RETRIES = 3;
+/** 单次 LLM 调用超时（毫秒）。Hobby plan 函数总上限 60s，单次控制在 25s 以内避免挂死。 */
+const LLM_TIMEOUT_MS = 25000;
+
+/** 带超时的 fetch，避免 LLM 上游挂死拖垃整个 Serverless 函数。 */
+async function fetchWithTimeout(url: string, init: RequestInit, ms = LLM_TIMEOUT_MS): Promise<Response> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { ...init, signal: ctrl.signal });
+  } catch (e) {
+    if (e instanceof Error && e.name === "AbortError") {
+      throw new LLMError(`上游超时 (超过 ${ms}ms 未返回)`, "network", e);
+    }
+    throw e;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 interface CallOptions<S extends ZodType> {
   systemPrompt: string;
@@ -63,7 +81,7 @@ async function callGemini(
   const model = process.env.GEMINI_MODEL || GEMINI_DEFAULT_MODEL;
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-  const res = await fetch(url, {
+  const res = await fetchWithTimeout(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -103,7 +121,7 @@ async function callOpenRouter(
   const apiKey = process.env.OPENROUTER_API_KEY!;
   const model = process.env.OPENROUTER_MODEL || OPENROUTER_DEFAULT_MODEL;
 
-  const res = await fetch(OPENROUTER_URL, {
+  const res = await fetchWithTimeout(OPENROUTER_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
