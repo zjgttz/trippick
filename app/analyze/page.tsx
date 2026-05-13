@@ -168,7 +168,7 @@ function AnalyzeInner() {
         <div className="mt-6 flex justify-center gap-3">
           <Link
             href="/input"
-            className="rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-600"
+            className="btn-press rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-600"
           >
             去输入页
           </Link>
@@ -336,7 +336,7 @@ function AnalyzeInner() {
           <button
             onClick={() => router.push("/itinerary")}
             disabled={acceptedCount === 0}
-            className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 sm:px-6 sm:py-3"
+            className="btn-press inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/25 hover:bg-brand-600 hover:shadow-xl hover:shadow-brand-500/35 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-lg sm:px-6 sm:py-3"
           >
             生成行程
             <ArrowRight className="h-4 w-4" strokeWidth={2} />
@@ -381,12 +381,14 @@ function POIGroupSection({
         </span>
       </h2>
       <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {visibleItems.map((it) => (
-          <POICard
+        {visibleItems.map((it, i) => (
+          <div
             key={it.name}
-            item={it}
-            hasConflict={conflictItems.has(it.name)}
-          />
+            className="animate-fade-up"
+            style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}
+          >
+            <POICard item={it} hasConflict={conflictItems.has(it.name)} />
+          </div>
         ))}
       </div>
       {hiddenCount > 0 && (

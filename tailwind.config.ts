@@ -45,6 +45,32 @@ const config: Config = {
           "sans-serif",
         ],
       },
+      transitionTimingFunction: {
+        // Linear-style easing：起手快，落地缓
+        smooth: "cubic-bezier(0.22, 1, 0.36, 1)",
+      },
+      keyframes: {
+        "fade-up": {
+          "0%": { opacity: "0", transform: "translateY(8px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "fade-in": {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
+        "scale-in": {
+          "0%": { opacity: "0", transform: "scale(0.96)" },
+          "100%": { opacity: "1", transform: "scale(1)" },
+        },
+      },
+      animation: {
+        "fade-up": "fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both",
+        "fade-up-delay-1": "fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both",
+        "fade-up-delay-2": "fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.16s both",
+        "fade-up-delay-3": "fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.24s both",
+        "fade-in": "fade-in 0.4s ease-out both",
+        "scale-in": "scale-in 0.2s cubic-bezier(0.22, 1, 0.36, 1) both",
+      },
     },
   },
   plugins: [],

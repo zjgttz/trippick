@@ -386,7 +386,7 @@ function ItineraryInner() {
         <div className="mt-6 flex justify-center gap-3">
           <Link
             href="/input"
-            className="rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white"
+            className="btn-press rounded-xl bg-brand-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-600"
           >
             去输入页
           </Link>
@@ -444,7 +444,7 @@ function ItineraryInner() {
           )}
           <button
             onClick={handleShare}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-600"
+            className="btn-press inline-flex items-center gap-1.5 rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-600"
           >
             <Users className="h-3.5 w-3.5" strokeWidth={2} />
             邀请同行人一起选
@@ -644,7 +644,7 @@ function ItineraryInner() {
               <button
                 onClick={handleExportImage}
                 disabled={exporting}
-                className="inline-flex items-center gap-1 rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-600 disabled:opacity-60"
+                className="btn-press inline-flex items-center gap-1 rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-600 disabled:opacity-60"
               >
                 <Download className="h-3 w-3" strokeWidth={2} />
                 {exporting ? "生成中…" : "生成长图保存"}
@@ -983,7 +983,7 @@ function ItineraryInner() {
               <button
                 onClick={handleAddItem}
                 disabled={!addName.trim()}
-                className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
+                className="btn-press rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-50"
               >
                 添加
               </button>

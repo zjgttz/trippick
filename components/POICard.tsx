@@ -61,12 +61,12 @@ export function POICard({ item, hasConflict, compact }: Props) {
 
   return (
     <div
-      className={`rounded-2xl bg-white p-4 ring-1 transition ${
+      className={`card-hover rounded-2xl bg-white p-4 ring-1 ${
         status === "accepted"
           ? "ring-brand-300 shadow-sm"
           : status === "rejected"
             ? "opacity-60 ring-ink-100"
-            : "ring-ink-100 hover:shadow-sm"
+            : "ring-ink-100 hover:shadow-md hover:ring-ink-200"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -151,7 +151,7 @@ export function POICard({ item, hasConflict, compact }: Props) {
               onClick={() =>
                 setDecision(item.name, on ? "unset" : b.status)
               }
-              className={`inline-flex items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-sm font-medium ring-1 transition ${
+              className={`btn-press inline-flex items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-sm font-medium ring-1 ${
                 on
                   ? b.active
                   : `bg-white text-ink-700 ring-ink-100 ${b.accent}`

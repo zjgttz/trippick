@@ -40,7 +40,7 @@ export default function Home() {
       {/* Hero */}
       <section className="mx-auto max-w-6xl px-6 pt-12 pb-20 md:pt-20 md:pb-28">
         <div className="grid items-center gap-12 md:grid-cols-2">
-          <div>
+          <div className="animate-fade-up">
             <h1 className="text-4xl font-bold leading-tight tracking-tight md:text-5xl">
               把你收藏的<span className="text-brand-500">小红书攻略</span>，
               <br className="hidden md:block" />
@@ -55,14 +55,14 @@ export default function Home() {
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/input"
-                className="group inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:bg-brand-600 hover:shadow-brand-500/40"
+                className="btn-press group inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-brand-500/25 hover:bg-brand-600 hover:shadow-xl hover:shadow-brand-500/35 hover:-translate-y-0.5"
               >
                 开始整理我的攻略
-                <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" strokeWidth={2} />
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" strokeWidth={2} />
               </Link>
               <Link
                 href="/analyze?demo=1"
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-6 py-3.5 text-base font-semibold text-ink-800 ring-1 ring-ink-200 transition hover:bg-ink-50 hover:ring-ink-300"
+                className="btn-press inline-flex items-center justify-center gap-2 rounded-xl bg-white px-6 py-3.5 text-base font-semibold text-ink-800 ring-1 ring-ink-200 hover:bg-ink-50 hover:ring-ink-300 hover:-translate-y-0.5"
               >
                 <Sparkles className="h-4 w-4 text-ink-500" strokeWidth={1.75} />
                 用示例数据试试
@@ -74,7 +74,7 @@ export default function Home() {
           </div>
 
           {/* 右侧示意卡片 */}
-          <div className="relative">
+          <div className="relative animate-fade-up-delay-2">
             <div className="rounded-3xl bg-white p-6 shadow-2xl shadow-brand-500/10 ring-1 ring-ink-100">
               <div className="flex items-center justify-between text-xs text-ink-500">
                 <span className="font-medium tracking-wide text-ink-700">杭州</span>
@@ -138,10 +138,12 @@ export default function Home() {
               title: "做出决定",
               desc: "提醒标记 + 候选决策板，一键确认，自动排成 Day 1 / Day 2。",
             },
-          ].map((it) => (
+          ].map((it, i) => (
             <div
               key={it.step}
-              className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-ink-100 transition hover:shadow-md"
+              className={`card-hover rounded-2xl bg-white p-6 shadow-sm ring-1 ring-ink-100 hover:shadow-md hover:ring-ink-200 ${
+                i === 0 ? "animate-fade-up" : i === 1 ? "animate-fade-up-delay-1" : "animate-fade-up-delay-2"
+              }`}
             >
               <div className="text-sm font-mono text-brand-500">{it.step}</div>
               <div className="mt-2 text-lg font-semibold">{it.title}</div>

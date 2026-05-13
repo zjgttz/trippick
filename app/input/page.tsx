@@ -297,7 +297,7 @@ export default function InputPage() {
           <button
             type="button"
             onClick={fillSample}
-            className="inline-flex shrink-0 items-center gap-1.5 cursor-pointer rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-brand-600 transition hover:bg-brand-600 active:scale-[0.98]"
+            className="btn-press inline-flex shrink-0 items-center gap-1.5 cursor-pointer rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-brand-600 hover:bg-brand-600"
           >
             <Sparkles className="h-4 w-4" strokeWidth={1.75} />
             一键填充示例
@@ -413,7 +413,7 @@ export default function InputPage() {
         <button
           onClick={submit}
           disabled={!canSubmit}
-          className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 sm:px-6 sm:py-3 sm:text-base"
+          className="btn-press inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/25 hover:bg-brand-600 hover:shadow-xl hover:shadow-brand-500/35 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-lg sm:px-6 sm:py-3 sm:text-base"
         >
           {loading ? (
             <>

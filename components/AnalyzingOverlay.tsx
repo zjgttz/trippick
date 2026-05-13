@@ -50,8 +50,8 @@ export default function AnalyzingOverlay({ show }: { show: boolean }) {
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-white/95 backdrop-blur-sm">
-      <div className="mx-6 w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-ink-100 sm:p-8">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-white/95 backdrop-blur-sm animate-fade-in">
+      <div className="mx-6 w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl ring-1 ring-ink-100 sm:p-8 animate-scale-in">
         <div className="flex items-center gap-3">
           <span className="inline-block h-8 w-8 animate-spin rounded-full border-[3px] border-brand-500/30 border-t-brand-500" />
           <div>

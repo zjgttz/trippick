@@ -16,3 +16,41 @@ html, body {
 /* 隐藏滚动条但保留滚动能力（横向卡片列） */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Linear 风：所有可交互元素默认 200ms smooth 过渡 */
+button, a, [role="button"] {
+  transition-property: transform, background-color, border-color, color, box-shadow, opacity;
+  transition-duration: 180ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* 按钮按下反馈 */
+.btn-press:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* 卡片 hover 抬升 */
+.card-hover {
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+}
+
+/* 红色 focus 环（取代浏览器默认蓝色） */
+*:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 36, 66, 0.18);
+  border-radius: inherit;
+}
+
+/* 尊重无障碍偏好 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
