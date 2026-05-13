@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Check } from "lucide-react";
 
 const STEPS = [
-  { label: "小驴正在驮攻略", icon: "📖" },
-  { label: "小驴正在挑地点和推荐理由", icon: "📍" },
-  { label: "小驴正在合并重复的地点", icon: "🔗" },
-  { label: "小驴正在看路线和偏好", icon: "⚠️" },
-  { label: "小驴摆出决策板", icon: "✨" },
+  { label: "小驴正在驮攻略" },
+  { label: "小驴正在挑地点和推荐理由" },
+  { label: "小驴正在合并重复的地点" },
+  { label: "小驴正在看路线和偏好" },
+  { label: "小驴摆出决策板" },
 ];
 
 // 各步骤大致占多少秒（总和≈ 120s，实际 AI 耗时 1-2 分钟）
@@ -74,20 +75,20 @@ export default function AnalyzingOverlay({ show }: { show: boolean }) {
                 }`}
               >
                 <span
-                  className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm ${
+                  className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-semibold ${
                     isDone
                       ? "bg-brand-500 text-white"
                       : isActive
-                        ? "bg-white ring-2 ring-brand-500"
+                        ? "bg-white ring-2 ring-brand-500 text-brand-500"
                         : "bg-ink-100 text-ink-500"
                   }`}
                 >
                   {isDone ? (
-                    "✓"
+                    <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
                   ) : isActive ? (
                     <span className="inline-block h-3 w-3 animate-pulse rounded-full bg-brand-500" />
                   ) : (
-                    step.icon
+                    i + 1
                   )}
                 </span>
                 <span
@@ -110,8 +111,8 @@ export default function AnalyzingOverlay({ show }: { show: boolean }) {
         </ol>
 
         {elapsed >= 120000 && (
-          <p className="mt-4 rounded-xl bg-accent-50 px-3 py-2 text-xs text-ink-700 ring-1 ring-accent-200">
-小驴有点累了，这批攻略量有点大，再等一下下。
+          <p className="mt-4 rounded-xl bg-ink-50 px-3 py-2 text-xs text-ink-700 ring-1 ring-ink-200">
+            小驴有点累了，这批攻略量有点大，再等一下下。
           </p>
         )}
       </div>

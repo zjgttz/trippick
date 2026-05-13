@@ -3,6 +3,20 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
+import {
+  ArrowLeft,
+  RotateCcw,
+  Sparkles,
+  ArrowRight,
+  Landmark,
+  UtensilsCrossed,
+  BedDouble,
+  Train,
+  Lightbulb,
+  Check,
+  AlertTriangle,
+  type LucideIcon,
+} from "lucide-react";
 import { useTripPickStore, getAcceptedItems } from "@/lib/store";
 import type { AnalysisResult, POIItem, POIType } from "@/lib/schema";
 import { POICard } from "@/components/POICard";
@@ -11,12 +25,12 @@ import { useRealtimeSync } from "@/lib/use-realtime-sync";
 
 const TYPE_ORDER: POIType[] = ["景点", "餐厅", "住宿", "交通", "其他"];
 
-const TYPE_META: Record<POIType, { label: string; icon: string }> = {
-  景点: { label: "景点", icon: "🏛️" },
-  餐厅: { label: "餐厅", icon: "🍜" },
-  住宿: { label: "住宿", icon: "🏨" },
-  交通: { label: "交通", icon: "🚇" },
-  其他: { label: "其他 / 避雷", icon: "💡" },
+const TYPE_META: Record<POIType, { label: string; Icon: LucideIcon }> = {
+  景点: { label: "景点", Icon: Landmark },
+  餐厅: { label: "餐厅", Icon: UtensilsCrossed },
+  住宿: { label: "住宿", Icon: BedDouble },
+  交通: { label: "交通", Icon: Train },
+  其他: { label: "其他 / 避雷", Icon: Lightbulb },
 };
 
 export default function AnalyzePage() {
@@ -173,20 +187,22 @@ function AnalyzeInner() {
     <main className="relative mx-auto min-h-screen max-w-6xl px-6 py-8 pb-32">
       {/* 顶栏 */}
       <div className="flex items-center justify-between text-sm">
-        <Link href="/" className="text-ink-500 hover:text-ink-900">
-          ← 首页
+        <Link href="/" className="inline-flex items-center gap-1 text-ink-500 hover:text-ink-900">
+          <ArrowLeft className="h-4 w-4" strokeWidth={1.75} />
+          首页
         </Link>
         <div className="flex items-center gap-2">
           {(analysis.is_mock || isFallback) && (
-            <span className="rounded-full bg-accent-50 px-2.5 py-1 text-xs font-medium text-accent-600 ring-1 ring-accent-500/30">
+            <span className="rounded-full bg-ink-100 px-2.5 py-1 text-xs font-medium text-ink-600">
               {isFallback ? "API 暂不可用，已切换示例" : "示例数据"}
             </span>
           )}
           <Link
             href="/input"
-            className="rounded-lg bg-white px-3 py-1.5 text-xs ring-1 ring-ink-100 hover:bg-ink-100"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs text-ink-700 ring-1 ring-ink-200 transition hover:ring-ink-300"
           >
-            ↻ 重新输入
+            <RotateCcw className="h-3.5 w-3.5 text-ink-500" strokeWidth={1.75} />
+            重新输入
           </Link>
         </div>
       </div>
@@ -204,8 +220,9 @@ function AnalyzeInner() {
             </span>
           )}
           {!enriching && enrichedItems.length > 0 && (
-            <span className="rounded-full bg-purple-50 px-3 py-1 text-xs text-purple-700 ring-1 ring-purple-200">
-              ✨ 含 {enrichedItems.length} 个 AI 补充
+            <span className="inline-flex items-center gap-1 rounded-full bg-ink-50 px-3 py-1 text-xs text-ink-700 ring-1 ring-ink-200">
+              <Sparkles className="h-3 w-3 text-ink-500" strokeWidth={1.75} />
+              含 {enrichedItems.length} 个 AI 补充
             </span>
           )}
           {peerCount > 0 && (
@@ -232,27 +249,24 @@ function AnalyzeInner() {
         )}
       </header>
 
-      {/* v2.2 P1: 决策板顶部 Summary 卡 — 先给结果再给细节 */}
+      {/* v2.3 P1: 决策板顶部 Summary 卡 — 纯白底，用文字层次代替色块 */}
       {!isFallback && (
         <section className="mt-6 rounded-2xl bg-white p-4 ring-1 ring-ink-100 sm:p-5">
-          <div className="flex items-start gap-3">
-            <span className="text-2xl" aria-hidden>📋</span>
-            <div className="flex-1 text-sm leading-relaxed text-ink-700">
-              <p>
-                共整理出 <span className="font-bold text-brand-500">{allItems.length}</span> 个候选地点
-                {(() => {
-                  const high = allItems.filter((it) => it.confidence_score >= 70).length;
-                  return high > 0 ? <>，其中 <span className="font-bold text-brand-500">{high}</span> 个被多次推荐</> : null;
-                })()}
-                {analysis.conflicts.length > 0 && (
-                  <>，发现 <span className="font-bold text-accent-600">{analysis.conflicts.length}</span> 处需要注意的地方</>
-                )}
-                。
-              </p>
-              <p className="mt-1.5 text-xs text-ink-500">
-                点 ✅ 把想去的加进行程，点 ❌ 跳过；推荐度低的已自动折叠。
-              </p>
-            </div>
+          <div className="text-sm leading-relaxed text-ink-700">
+            <p>
+              共整理出 <span className="font-bold text-brand-500">{allItems.length}</span> 个候选地点
+              {(() => {
+                const high = allItems.filter((it) => it.confidence_score >= 70).length;
+                return high > 0 ? <>，其中 <span className="font-bold text-brand-500">{high}</span> 个被多次推荐</> : null;
+              })()}
+              {analysis.conflicts.length > 0 && (
+                <>，发现 <span className="font-bold text-ink-900">{analysis.conflicts.length}</span> 处需要注意的地方</>
+              )}
+              。
+            </p>
+            <p className="mt-1.5 text-xs text-ink-500">
+              勾选把想去的加进行程，删除跳过；推荐度低的已自动折叠。
+            </p>
           </div>
         </section>
       )}
@@ -261,7 +275,7 @@ function AnalyzeInner() {
       {isFallback && (
         <section className="mt-6 rounded-2xl border-2 border-amber-300 bg-amber-50 p-4 sm:p-5">
           <div className="flex items-start gap-3">
-            <span className="text-2xl" aria-hidden>⚠️</span>
+            <AlertTriangle className="h-6 w-6 shrink-0 text-amber-600" strokeWidth={1.75} />
             <div className="flex-1">
               <h3 className="text-base font-bold text-amber-900">
                 AI 没能成功分析你的笔记
@@ -274,7 +288,8 @@ function AnalyzeInner() {
                   href="/input"
                   className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-700"
                 >
-                  ↻ 回到输入页重试
+                  <RotateCcw className="h-4 w-4" strokeWidth={2} />
+                  回到输入页重试
                 </Link>
                 <span className="text-xs text-amber-700 self-center">
                   （或继续浏览下方示例，体验完整功能）
@@ -300,7 +315,7 @@ function AnalyzeInner() {
             <POIGroupSection
               key={t}
               type={t}
-              icon={meta.icon}
+              Icon={meta.Icon}
               label={meta.label}
               items={arr}
               conflictItems={conflictItems}
@@ -315,15 +330,16 @@ function AnalyzeInner() {
           <div className="min-w-0 flex-1 text-sm">
             已选 <span className="text-lg font-bold text-brand-500">{acceptedCount}</span> 项
             {acceptedCount === 0 && (
-              <span className="ml-2 hidden text-xs text-ink-500 sm:inline">点 ✅ 把想去的地方加进行程</span>
+              <span className="ml-2 hidden text-xs text-ink-500 sm:inline">勾选把想去的地方加进行程</span>
             )}
           </div>
           <button
             onClick={() => router.push("/itinerary")}
             disabled={acceptedCount === 0}
-            className="inline-flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 sm:px-6 sm:py-3"
+            className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-50 sm:px-6 sm:py-3"
           >
-            生成行程 <span aria-hidden>→</span>
+            生成行程
+            <ArrowRight className="h-4 w-4" strokeWidth={2} />
           </button>
         </div>
       </div>
@@ -336,13 +352,13 @@ const LOW_THRESHOLD = 70;
 
 function POIGroupSection({
   type: _type,
-  icon,
+  Icon,
   label,
   items,
   conflictItems,
 }: {
   type: POIType;
-  icon: string;
+  Icon: LucideIcon;
   label: string;
   items: POIItem[];
   conflictItems: Set<string>;
@@ -358,7 +374,7 @@ function POIGroupSection({
   return (
     <div>
       <h2 className="flex items-center gap-2 text-lg font-semibold">
-        <span>{icon}</span>
+        <Icon className="h-5 w-5 text-ink-500" strokeWidth={1.75} />
         <span>{label}</span>
         <span className="text-sm font-normal text-ink-500">
           · {items.length} 个

@@ -4,6 +4,23 @@ import Link from "next/link";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
+  Users,
+  Calendar,
+  Map as MapIcon,
+  Check,
+  X,
+  Zap,
+  Wallet,
+  AlertCircle,
+  Lightbulb,
+  Pin,
+  Download,
+  RotateCcw,
+  GripVertical,
+  CheckCheck,
+  Sparkles,
+} from "lucide-react";
+import {
   useTripPickStore,
   getAcceptedItems,
   type DecisionStatus,
@@ -427,9 +444,10 @@ function ItineraryInner() {
           )}
           <button
             onClick={handleShare}
-            className="rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-600"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-600"
           >
-            👥 邀请同行人一起选
+            <Users className="h-3.5 w-3.5" strokeWidth={2} />
+            邀请同行人一起选
           </button>
         </div>
       </div>
@@ -449,8 +467,15 @@ function ItineraryInner() {
         <div className="mt-4 rounded-2xl bg-brand-50 px-4 py-3 text-sm ring-1 ring-brand-100">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <div className="font-semibold text-brand-600">
-                {copied ? "✓ 链接已复制" : "复制下方链接发给同行人"}
+              <div className="inline-flex items-center gap-1 font-semibold text-brand-600">
+                {copied ? (
+                  <>
+                    <Check className="h-3.5 w-3.5" strokeWidth={2.25} />
+                    链接已复制
+                  </>
+                ) : (
+                  "复制下方链接发给同行人"
+                )}
               </div>
               <div className="mt-1 truncate text-xs text-ink-700">{shareURL}</div>
             </div>
@@ -466,8 +491,9 @@ function ItineraryInner() {
 
       {/* v2.0 M5: 伴粘状态提示 */}
       {lastPeerUpdate && (
-        <div className="mt-3 rounded-xl bg-green-50 px-4 py-2 text-xs text-green-700 ring-1 ring-green-200">
-          ✨ 同行人刚刚更新了选择 · {formatRelativeTime(lastPeerUpdate)}
+        <div className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-green-50 px-4 py-2 text-xs text-green-700 ring-1 ring-green-200">
+          <Sparkles className="h-3.5 w-3.5" strokeWidth={1.75} />
+          同行人刚刚更新了选择 · {formatRelativeTime(lastPeerUpdate)}
         </div>
       )}
 
@@ -476,7 +502,7 @@ function ItineraryInner() {
         <section className="mt-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-ink-100">
           <div className="flex items-center gap-2">
             <span className="grid h-8 w-8 place-items-center rounded-full bg-brand-50 text-brand-600">
-              👥
+              <Users className="h-4 w-4" strokeWidth={1.75} />
             </span>
             <div className="font-semibold">协同视图</div>
             <span className="text-xs text-ink-500">
@@ -486,8 +512,9 @@ function ItineraryInner() {
 
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <div className="rounded-xl bg-green-50 p-3 ring-1 ring-green-100">
-              <div className="text-xs font-semibold text-green-700">
-                ✓ 你们都想去（{intersection.length}）
+              <div className="inline-flex items-center gap-1 text-xs font-semibold text-green-700">
+                <CheckCheck className="h-3.5 w-3.5" strokeWidth={2} />
+                你们都想去（{intersection.length}）
               </div>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {intersection.length === 0 ? (
@@ -505,9 +532,10 @@ function ItineraryInner() {
               </div>
             </div>
 
-            <div className="rounded-xl bg-accent-50 p-3 ring-1 ring-accent-200">
-              <div className="text-xs font-semibold text-accent-600">
-                ⚡ 驴友意见不合（{disagree.length}）
+            <div className="rounded-xl bg-white p-3 ring-1 ring-ink-200">
+              <div className="inline-flex items-center gap-1 text-xs font-semibold text-ink-800">
+                <Zap className="h-3.5 w-3.5 text-amber-500" strokeWidth={2} />
+                驴友意见不合（{disagree.length}）
               </div>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {disagree.length === 0 ? (
@@ -516,7 +544,7 @@ function ItineraryInner() {
                   disagree.map((n) => (
                     <span
                       key={n}
-                      className="rounded-md bg-white px-2 py-1 text-xs text-ink-900 ring-1 ring-accent-300"
+                      className="rounded-md bg-ink-50 px-2 py-1 text-xs text-ink-900 ring-1 ring-ink-200"
                     >
                       {n}
                     </span>
@@ -539,7 +567,10 @@ function ItineraryInner() {
                 : "text-ink-500 hover:text-ink-900"
             }`}
           >
-            📅 行程视图
+            <span className="inline-flex items-center gap-1.5">
+              <Calendar className="h-4 w-4" strokeWidth={1.75} />
+              行程视图
+            </span>
             {activeTab === "timeline" && (
               <span className="absolute bottom-0 left-2 right-2 h-0.5 rounded-t-full bg-brand-500" />
             )}
@@ -552,7 +583,10 @@ function ItineraryInner() {
                 : "text-ink-500 hover:text-ink-900"
             }`}
           >
-            🗺️ 地图视图
+            <span className="inline-flex items-center gap-1.5">
+              <MapIcon className="h-4 w-4" strokeWidth={1.75} />
+              地图视图
+            </span>
             {activeTab === "map" && (
               <span className="absolute bottom-0 left-2 right-2 h-0.5 rounded-t-full bg-brand-500" />
             )}
@@ -594,24 +628,26 @@ function ItineraryInner() {
                   已手动调整
                 </span>
               ) : (
-<span>👆 拖拽条目可重排顺序 · 右上角 ✕ 删除 · 点 “+ 添加” 插入自定义条目（如高铁、机场大巴）</span>
+<span className="inline-flex items-center gap-1"><GripVertical className="h-3.5 w-3.5 text-ink-400" strokeWidth={1.75} />拖拽条目可重排顺序 · 右上角点“×”删除 · 点“+ 添加”插入自定义条目（如高铁、机场大巴）</span>
               )}
             </div>
             <div className="flex gap-2">
               {customItinerary && (
                 <button
                   onClick={handleResetCustom}
-                  className="rounded-lg bg-white px-3 py-1.5 text-xs ring-1 ring-ink-200 hover:bg-ink-100/40"
+                  className="inline-flex items-center gap-1 rounded-lg bg-white px-3 py-1.5 text-xs ring-1 ring-ink-200 hover:bg-ink-100/40"
                 >
-                  ↻ 恢复 AI 默认排期
+                  <RotateCcw className="h-3 w-3" strokeWidth={1.75} />
+                  恢复 AI 默认排期
                 </button>
               )}
               <button
                 onClick={handleExportImage}
                 disabled={exporting}
-                className="rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-600 disabled:opacity-60"
+                className="inline-flex items-center gap-1 rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-600 disabled:opacity-60"
               >
-                {exporting ? "生成中…" : "📅 生成长图保存"}
+                <Download className="h-3 w-3" strokeWidth={2} />
+                {exporting ? "生成中…" : "生成长图保存"}
               </button>
             </div>
           </div>
@@ -620,7 +656,7 @@ function ItineraryInner() {
         <div ref={timelineRef} className="space-y-6 bg-white/0">
         {itineraryToShow.length === 0 && (
           <div className="rounded-2xl bg-white p-10 text-center text-ink-500 ring-1 ring-ink-100">
-            还没选地方？回上一页点 ✅ 把想去的加进来
+            还没选地方？回上一页勾选把想去的加进来
           </div>
         )}
         {activeTab === "timeline" && itineraryToShow.map((day) => (
@@ -756,7 +792,7 @@ function ItineraryInner() {
                                 title="删除该条目"
                                 className="absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-white text-ink-500 ring-1 ring-ink-200 opacity-0 transition group-hover:opacity-100 hover:bg-red-50 hover:text-red-600 hover:ring-red-200"
                               >
-                                ✕
+                                <X className="h-3.5 w-3.5" strokeWidth={2} />
                               </button>
                             )}
                             {!exporting && (
@@ -765,7 +801,7 @@ function ItineraryInner() {
                                 className="absolute left-1 top-1/2 -translate-y-1/2 select-none text-ink-300 opacity-0 transition group-hover:opacity-100"
                                 title="拖动重排"
                               >
-                                ⋮⋮
+                                <GripVertical className="h-4 w-4" strokeWidth={1.5} />
                               </span>
                             )}
                             <div className="flex flex-wrap items-center gap-2">
@@ -780,8 +816,9 @@ function ItineraryInner() {
                                 </span>
                               )}
                               {partnerWants && (
-                                <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700">
-                                  ✓ 同行人也想去
+                                <span className="inline-flex items-center gap-0.5 rounded-full bg-green-50 px-2 py-0.5 text-xs text-green-700">
+                                  <Check className="h-3 w-3" strokeWidth={2.25} />
+                                  同行人也想去
                                 </span>
                               )}
                             </div>
@@ -791,13 +828,15 @@ function ItineraryInner() {
                               </div>
                             )}
                             {it && it.estimated_budget && (
-                              <div className="mt-1 text-xs text-ink-700">
-                                💰 {it.estimated_budget}
+                              <div className="mt-1 inline-flex items-center gap-1 text-xs text-ink-700">
+                                <Wallet className="h-3 w-3" strokeWidth={1.75} />
+                                {it.estimated_budget}
                               </div>
                             )}
                             {it && it.warnings.length > 0 && (
-                              <div className="mt-1 text-xs text-warn-distance">
-                                ⚠️ {it.warnings.join(" · ")}
+                              <div className="mt-1 inline-flex items-start gap-1 text-xs text-warn-distance">
+                                <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" strokeWidth={1.75} />
+                                <span>{it.warnings.join(" · ")}</span>
                               </div>
                             )}
                           </div>
@@ -806,8 +845,9 @@ function ItineraryInner() {
                       })}
                       {/* 只在 slot 有实际条目时才显示 note，避免 LLM 在空 slot 里编造「隐形推荐」 */}
                       {slot.note && slot.items.length > 0 && (
-                        <div className="rounded-lg bg-accent-50/60 px-3 py-1.5 text-xs leading-relaxed text-ink-700 ring-1 ring-accent-100">
-                          💡 {slot.note}
+                        <div className="inline-flex items-start gap-1.5 rounded-lg bg-ink-50 px-3 py-1.5 text-xs leading-relaxed text-ink-700 ring-1 ring-ink-100">
+                          <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-400" strokeWidth={1.75} />
+                          <span>{slot.note}</span>
                         </div>
                       )}
                       {!exporting && (
@@ -954,7 +994,7 @@ function ItineraryInner() {
 
       {/* 行程概要（已选 N 项 / 共 N 天） */}
       {accepted.length > 0 && (
-        <section className="mt-6 rounded-2xl bg-gradient-to-br from-brand-50 to-accent-50 px-5 py-3 text-xs text-ink-700 ring-1 ring-brand-100">
+        <section className="mt-6 rounded-2xl bg-white px-5 py-3 text-xs text-ink-700 ring-1 ring-ink-100">
           已选 <span className="font-semibold text-brand-600">{accepted.length}</span> 项 · 共 <span className="font-semibold text-brand-600">{itineraryToShow.length}</span> 天
         </section>
       )}
@@ -962,7 +1002,10 @@ function ItineraryInner() {
       {/* 来源笔记 */}
       {analysis.source_titles.length > 0 && (
         <section className="mt-6 rounded-2xl bg-white p-5 ring-1 ring-ink-100">
-          <h3 className="text-sm font-semibold text-ink-700">📌 来源笔记</h3>
+          <h3 className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-700">
+            <Pin className="h-3.5 w-3.5 text-ink-500" strokeWidth={1.75} />
+            来源笔记
+          </h3>
           <ul className="mt-2 space-y-1.5 text-xs text-ink-500">
             {analysis.source_titles.map((t, i) => (
               <li key={i}>· {t}</li>

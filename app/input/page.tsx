@@ -3,6 +3,17 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import {
+  ArrowLeft,
+  Sparkles,
+  Lightbulb,
+  Check,
+  X,
+  FileText,
+  Link2,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
 import { SAMPLE_NOTES } from "@/lib/sample-notes";
 import { useTripPickStore } from "@/lib/store";
 import type { AnalysisResult } from "@/lib/schema";
@@ -241,15 +252,17 @@ export default function InputPage() {
       <AnalyzingOverlay show={loading} />
       {/* 顶栏 */}
       <div className="flex items-center justify-between">
-        <Link href="/" className="text-sm text-ink-500 hover:text-ink-900">
-          ← 返回首页
+        <Link href="/" className="inline-flex items-center gap-1 text-sm text-ink-500 hover:text-ink-900">
+          <ArrowLeft className="h-4 w-4" strokeWidth={1.75} />
+          返回首页
         </Link>
         <button
           onClick={tryDemo}
           disabled={loading}
-          className="rounded-lg bg-accent-500 px-3 py-1.5 text-xs font-semibold text-ink-900 ring-1 ring-accent-600/30 transition hover:bg-accent-600 disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-ink-700 ring-1 ring-ink-200 transition hover:ring-ink-300 disabled:opacity-60"
         >
-          ✨ 用示例数据
+          <Sparkles className="h-3.5 w-3.5 text-ink-500" strokeWidth={1.75} />
+          用示例数据
         </button>
       </div>
 
@@ -259,8 +272,9 @@ export default function InputPage() {
       <p className="mt-2 text-ink-700">
         3–5 篇即可，TripPick 会自动提取关键信息，帮你做决定。
       </p>
-      <p className="mt-1 text-xs text-ink-500">
-        💡 从小红书 APP「分享 → 复制链接」得到的整段文案可以直接粘贴，系统会自动识别并清洗。
+      <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-ink-500">
+        <Lightbulb className="h-3.5 w-3.5 text-ink-400" strokeWidth={1.75} />
+        从小红书 APP「分享 → 复制链接」得到的整段文案可以直接粘贴，系统会自动识别并清洗。
       </p>
 
       {/* v2.0 新增：偏好面板 */}
@@ -269,10 +283,10 @@ export default function InputPage() {
       </div>
 
       {/* 示例 banner —— 实心按钮 + 醒目说明 */}
-      <div className="mt-6 rounded-2xl bg-accent-50 p-4 ring-1 ring-accent-500/30">
+      <div className="mt-6 rounded-2xl bg-white p-4 ring-1 ring-ink-100">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-2 text-sm text-ink-900">
-            <span>💡</span>
+          <div className="flex items-start gap-2.5 text-sm text-ink-900">
+            <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-ink-500" strokeWidth={1.75} />
             <div>
               <div className="font-semibold">没有现成数据？</div>
               <div className="text-xs text-ink-600">
@@ -283,9 +297,10 @@ export default function InputPage() {
           <button
             type="button"
             onClick={fillSample}
-            className="shrink-0 cursor-pointer rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-brand-600 transition hover:bg-brand-600 active:scale-[0.98]"
+            className="inline-flex shrink-0 items-center gap-1.5 cursor-pointer rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-brand-600 transition hover:bg-brand-600 active:scale-[0.98]"
           >
-            ✨ 一键填充示例
+            <Sparkles className="h-4 w-4" strokeWidth={1.75} />
+            一键填充示例
           </button>
         </div>
       </div>
@@ -307,9 +322,9 @@ export default function InputPage() {
               }`}
             >
               <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-ink-700">
+                <span className="inline-flex items-center gap-1 font-semibold text-ink-700">
                   笔记 {i + 1}
-                  {ok && <span className="ml-2 text-brand-500">✓</span>}
+                  {ok && <Check className="ml-1 h-3.5 w-3.5 text-brand-500" strokeWidth={2.25} />}
                 </span>
                 <div className="flex items-center gap-3 text-ink-500">
                   <span className={overflow ? "text-red-500" : ""}>
@@ -321,7 +336,7 @@ export default function InputPage() {
                       className="text-ink-500 hover:text-red-500"
                       aria-label="删除"
                     >
-                      ✕
+                      <X className="h-4 w-4" strokeWidth={1.75} />
                     </button>
                   )}
                 </div>
@@ -335,7 +350,10 @@ export default function InputPage() {
               />
               {parseHints[i] && (
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-600 ring-1 ring-brand-200">
-                  <span className="flex-1 min-w-0">📋 {parseHints[i]}</span>
+                  <span className="flex-1 min-w-0 inline-flex items-center gap-1.5">
+                    <FileText className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
+                    {parseHints[i]}
+                  </span>
                   <div className="flex shrink-0 gap-2">
                     <button
                       onClick={() => applyParse(i)}
@@ -346,9 +364,10 @@ export default function InputPage() {
                     <button
                       onClick={() => tryFetchXhs(i)}
                       disabled={fetchingIdx === i}
-                      className="rounded-md bg-purple-500 px-2 py-1 font-semibold text-white transition hover:bg-purple-600 disabled:opacity-60"
+                      className="inline-flex items-center gap-1 rounded-md bg-ink-900 px-2 py-1 font-semibold text-white transition hover:bg-ink-700 disabled:opacity-60"
                     >
-                      {fetchingIdx === i ? "抓取中…" : "🔗 试试自动抓取正文"}
+                      <Link2 className="h-3 w-3" strokeWidth={2} />
+                      {fetchingIdx === i ? "抓取中…" : "试试自动抓取正文"}
                     </button>
                   </div>
                 </div>

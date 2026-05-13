@@ -1,5 +1,16 @@
 "use client";
 
+import {
+  Check,
+  Pause,
+  X,
+  AlertCircle,
+  Sparkles,
+  Wallet,
+  Clock,
+  ExternalLink,
+  type LucideIcon,
+} from "lucide-react";
 import type { POIItem } from "@/lib/schema";
 import { ConfidenceRing } from "./ConfidenceRing";
 import { useTripPickStore, type DecisionStatus } from "@/lib/store";
@@ -14,28 +25,28 @@ interface Props {
 const STATUS_BTNS: Array<{
   status: DecisionStatus;
   label: string;
-  icon: string;
+  Icon: LucideIcon;
   accent: string;
   active: string;
 }> = [
   {
     status: "accepted",
     label: "想去",
-    icon: "✅",
+    Icon: Check,
     accent: "hover:bg-brand-50 hover:text-brand-600",
     active: "bg-brand-500 text-white ring-brand-500",
   },
   {
     status: "pending",
     label: "待定",
-    icon: "⏸",
-    accent: "hover:bg-accent-50 hover:text-accent-600",
-    active: "bg-accent-500 text-ink-900 ring-accent-500",
+    Icon: Pause,
+    accent: "hover:bg-ink-100 hover:text-ink-900",
+    active: "bg-ink-200 text-ink-900 ring-ink-300",
   },
   {
     status: "rejected",
     label: "跳过",
-    icon: "❌",
+    Icon: X,
     accent: "hover:bg-ink-100 hover:text-ink-900",
     active: "bg-ink-700 text-white ring-ink-700",
   },
@@ -73,13 +84,15 @@ export function POICard({ item, hasConflict, compact }: Props) {
               </span>
             )}
             {hasConflict && (
-              <span className="rounded-full bg-warn-distance/10 px-2 py-0.5 text-xs text-warn-distance">
-                ⚡ 需注意
+              <span className="inline-flex items-center gap-1 rounded-full bg-warn-distance/10 px-2 py-0.5 text-xs text-warn-distance">
+                <AlertCircle className="h-3 w-3" strokeWidth={1.75} />
+                需注意
               </span>
             )}
             {item.source === "ai_recommended" && (
-              <span className="rounded-full bg-purple-50 px-2 py-0.5 text-xs text-purple-700 ring-1 ring-purple-200">
-                ✨ AI 补充
+              <span className="inline-flex items-center gap-1 rounded-full bg-ink-50 px-2 py-0.5 text-xs text-ink-700 ring-1 ring-ink-200">
+                <Sparkles className="h-3 w-3 text-ink-500" strokeWidth={1.75} />
+                AI 补充
               </span>
             )}
           </div>
@@ -98,8 +111,9 @@ export function POICard({ item, hasConflict, compact }: Props) {
           )}
 
           {!compact && item.warnings.length > 0 && (
-            <div className="mt-2 text-xs leading-relaxed text-warn-distance">
-              ⚠️ {item.warnings.join(" · ")}
+            <div className="mt-2 inline-flex items-start gap-1.5 text-xs leading-relaxed text-warn-distance">
+              <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
+              <span>{item.warnings.join(" · ")}</span>
             </div>
           )}
 
@@ -109,9 +123,17 @@ export function POICard({ item, hasConflict, compact }: Props) {
                 <span>适合：{item.suitable_for.join("/")}</span>
               )}
               {item.estimated_budget && (
-                <span>💰 {item.estimated_budget}</span>
+                <span className="inline-flex items-center gap-1">
+                  <Wallet className="h-3 w-3" strokeWidth={1.75} />
+                  {item.estimated_budget}
+                </span>
               )}
-              {item.suggested_time && <span>🕐 {item.suggested_time}</span>}
+              {item.suggested_time && (
+                <span className="inline-flex items-center gap-1">
+                  <Clock className="h-3 w-3" strokeWidth={1.75} />
+                  {item.suggested_time}
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -129,13 +151,13 @@ export function POICard({ item, hasConflict, compact }: Props) {
               onClick={() =>
                 setDecision(item.name, on ? "unset" : b.status)
               }
-              className={`rounded-lg px-2 py-1.5 text-sm font-medium ring-1 transition ${
+              className={`inline-flex items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-sm font-medium ring-1 transition ${
                 on
                   ? b.active
                   : `bg-white text-ink-700 ring-ink-100 ${b.accent}`
               }`}
             >
-              <span className="mr-1">{b.icon}</span>
+              <b.Icon className="h-3.5 w-3.5" strokeWidth={2} />
               {b.label}
             </button>
           );
@@ -150,7 +172,8 @@ export function POICard({ item, hasConflict, compact }: Props) {
           rel="noopener noreferrer"
           className="mt-2 inline-flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700 hover:underline"
         >
-          在小红书查看更多说明 <span aria-hidden>↗</span>
+          在小红书查看更多说明
+          <ExternalLink className="h-3 w-3" strokeWidth={1.75} />
         </a>
       )}
     </div>

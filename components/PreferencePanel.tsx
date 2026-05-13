@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { SlidersHorizontal, ChevronDown, ChevronRight } from "lucide-react";
 import {
   loadPreferences,
   savePreferences,
@@ -11,27 +12,27 @@ import {
 
 const DURATION_OPTIONS: Array<{ value: DurationKey; label: string }> = [
   { value: "any", label: "随意" },
-  { value: "day1", label: "🌅 一日游" },
-  { value: "day2", label: "🌙 两日一夜" },
-  { value: "day3", label: "🌙 三日两夜" },
-  { value: "day4", label: "🌙 四日三夜" },
-  { value: "week1", label: "🗓️ 一周游" },
-  { value: "week_plus", label: "🌍 一周以上" },
+  { value: "day1", label: "一日游" },
+  { value: "day2", label: "两日一夜" },
+  { value: "day3", label: "三日两夜" },
+  { value: "day4", label: "四日三夜" },
+  { value: "week1", label: "一周游" },
+  { value: "week_plus", label: "一周以上" },
 ];
 
 const BUDGET_OPTIONS: Array<{ value: UserPreferences["budget"]; label: string }> = [
   { value: "any", label: "随意" },
-  { value: "budget", label: "💸 学生党" },
-  { value: "mid", label: "🍱 中等" },
-  { value: "premium", label: "✨ 高品质" },
+  { value: "budget", label: "学生党" },
+  { value: "mid", label: "中等" },
+  { value: "premium", label: "高品质" },
 ];
 
 const PARTY_OPTIONS: Array<{ value: UserPreferences["party_size"]; label: string }> = [
   { value: "any", label: "随意" },
-  { value: "solo", label: "🚶 一人" },
-  { value: "couple", label: "💑 情侣" },
-  { value: "family", label: "👨‍👩‍👧 亲子" },
-  { value: "group", label: "👥 朋友团" },
+  { value: "solo", label: "一人" },
+  { value: "couple", label: "情侣" },
+  { value: "family", label: "亲子" },
+  { value: "group", label: "朋友团" },
 ];
 
 interface Props {
@@ -92,7 +93,7 @@ export function PreferencePanel({ onChange, defaultOpen = true }: Props) {
         type="button"
       >
         <span className="flex items-center gap-2 text-sm font-medium text-ink-900">
-          <span>🎯</span>
+          <SlidersHorizontal className="h-4 w-4 text-ink-500" strokeWidth={1.75} />
           我的旅行偏好
           {hasAny && (
             <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-600">
@@ -100,7 +101,11 @@ export function PreferencePanel({ onChange, defaultOpen = true }: Props) {
             </span>
           )}
         </span>
-        <span className="text-ink-400">{open ? "▾" : "▸"}</span>
+        {open ? (
+          <ChevronDown className="h-4 w-4 text-ink-400" strokeWidth={1.75} />
+        ) : (
+          <ChevronRight className="h-4 w-4 text-ink-400" strokeWidth={1.75} />
+        )}
       </button>
 
       {open && (
@@ -179,8 +184,8 @@ export function PreferencePanel({ onChange, defaultOpen = true }: Props) {
                     onClick={() => toggleStyle(s)}
                     className={`rounded-full px-3 py-1 text-xs ring-1 transition ${
                       on
-                        ? "bg-accent-500 text-ink-900 ring-accent-500"
-                        : "bg-white text-ink-700 ring-ink-200 hover:ring-accent-300"
+                        ? "bg-brand-500 text-white ring-brand-500"
+                        : "bg-white text-ink-700 ring-ink-200 hover:ring-brand-200"
                     }`}
                   >
                     {s}
@@ -192,7 +197,7 @@ export function PreferencePanel({ onChange, defaultOpen = true }: Props) {
 
           {hasAny && (
             <p className="text-xs text-ink-500">
-              ✨ AI 会根据这些偏好优先推荐你可能喜欢的地点。
+              AI 会根据这些偏好优先推荐你可能喜欢的地点。
             </p>
           )}
         </div>

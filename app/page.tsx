@@ -1,13 +1,14 @@
 import Link from "next/link";
 import Image from "next/image";
+import { ArrowRight, Sparkles, Map, AlertTriangle } from "lucide-react";
 
 export default function Home() {
   return (
     <main className="relative min-h-screen overflow-hidden">
-      {/* 背景渐变 */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-brand-50 via-white to-accent-50" />
-      <div className="absolute -top-40 -right-40 -z-10 h-96 w-96 rounded-full bg-brand-100 blur-3xl opacity-60" />
-      <div className="absolute -bottom-40 -left-40 -z-10 h-96 w-96 rounded-full bg-accent-50 blur-3xl opacity-80" />
+      {/* 背景渐变 — v2.3 去掊黄，保留柔和粉白 */}
+      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-brand-50/60 via-white to-white" />
+      <div className="absolute -top-40 -right-40 -z-10 h-96 w-96 rounded-full bg-brand-100 blur-3xl opacity-50" />
+      <div className="absolute -bottom-40 -left-40 -z-10 h-96 w-96 rounded-full bg-ink-100 blur-3xl opacity-60" />
 
       {/* 顶栏 */}
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
@@ -54,18 +55,17 @@ export default function Home() {
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/input"
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:bg-brand-600 hover:shadow-brand-500/40"
+                className="group inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-brand-500/30 transition hover:bg-brand-600 hover:shadow-brand-500/40"
               >
                 开始整理我的攻略
-                <span aria-hidden>→</span>
+                <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" strokeWidth={2} />
               </Link>
               <Link
                 href="/analyze?demo=1"
-                className="group inline-flex items-center justify-center gap-2 rounded-xl bg-accent-500 px-6 py-3.5 text-base font-semibold text-ink-900 shadow-lg shadow-accent-500/30 ring-1 ring-accent-600/20 transition hover:bg-accent-600"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-6 py-3.5 text-base font-semibold text-ink-800 ring-1 ring-ink-200 transition hover:bg-ink-50 hover:ring-ink-300"
               >
-                <span aria-hidden>✨</span>
+                <Sparkles className="h-4 w-4 text-ink-500" strokeWidth={1.75} />
                 用示例数据试试
-                <span aria-hidden className="transition group-hover:translate-x-0.5">→</span>
               </Link>
             </div>
             <p className="mt-3 text-xs text-ink-500">
@@ -76,11 +76,9 @@ export default function Home() {
           {/* 右侧示意卡片 */}
           <div className="relative">
             <div className="rounded-3xl bg-white p-6 shadow-2xl shadow-brand-500/10 ring-1 ring-ink-100">
-              <div className="flex items-center gap-2 text-xs text-ink-500">
-                <span className="h-2 w-2 rounded-full bg-red-400" />
-                <span className="h-2 w-2 rounded-full bg-yellow-400" />
-                <span className="h-2 w-2 rounded-full bg-green-400" />
-                <span className="ml-2">trippick · 杭州</span>
+              <div className="flex items-center justify-between text-xs text-ink-500">
+                <span className="font-medium tracking-wide text-ink-700">杭州</span>
+                <span className="text-ink-400">5 篇攻略 · 10 秒</span>
               </div>
               <div className="mt-5 space-y-3">
                 <div className="rounded-2xl bg-brand-50/60 p-4 ring-1 ring-brand-100">
@@ -95,8 +93,9 @@ export default function Home() {
                 <div className="rounded-2xl bg-white p-4 ring-1 ring-ink-100">
                   <div className="flex items-center justify-between gap-2">
                     <span className="min-w-0 truncate font-semibold">良渚文化村</span>
-                    <span className="shrink-0 whitespace-nowrap rounded-full bg-warn-distance/10 px-2 py-0.5 text-xs text-warn-distance">
-                      🗺️ 距离较远
+                    <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-warn-distance/10 px-2 py-0.5 text-xs text-warn-distance">
+                      <Map className="h-3 w-3" strokeWidth={1.75} />
+                      距离较远
                     </span>
                   </div>
                   <div className="mt-2 text-xs text-ink-700">与法喜寺相距约 30km，不建议同一天上午</div>
@@ -104,15 +103,16 @@ export default function Home() {
                 <div className="rounded-2xl bg-white p-4 ring-1 ring-ink-100">
                   <div className="flex items-center justify-between gap-2">
                     <span className="min-w-0 truncate font-semibold">某网红咖啡店</span>
-                    <span className="shrink-0 whitespace-nowrap rounded-full bg-warn-opinion/10 px-2 py-0.5 text-xs text-warn-opinion">
-                      ⚠️ 口碑分歧
+                    <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full bg-warn-opinion/10 px-2 py-0.5 text-xs text-warn-opinion">
+                      <AlertTriangle className="h-3 w-3" strokeWidth={1.75} />
+                      口碑分歧
                     </span>
                   </div>
                   <div className="mt-2 text-xs text-ink-700">3 篇推荐 / 1 篇明确避雷，性价比一般</div>
                 </div>
               </div>
             </div>
-            <div className="absolute -bottom-4 -right-4 -z-10 h-full w-full rounded-3xl bg-accent-100/60" />
+            <div className="absolute -bottom-4 -right-4 -z-10 h-full w-full rounded-3xl bg-ink-100/60" />
           </div>
         </div>
       </section>
