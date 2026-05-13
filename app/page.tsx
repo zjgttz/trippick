@@ -21,7 +21,10 @@ export default function Home() {
             priority
             className="h-11 w-11 object-contain"
           />
-          <span className="text-xl font-bold tracking-tight text-ink-900">选驴 TripPick</span>
+          <span className="text-xl font-bold tracking-tight">
+            <span className="text-brand-500">选驴</span>
+            <span className="text-ink-900"> TripPick</span>
+          </span>
         </div>
         <nav className="hidden md:flex items-center gap-6 text-sm text-ink-700">
           <a href="#how" className="hover:text-ink-900">怎么用</a>
