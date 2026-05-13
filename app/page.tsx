@@ -28,7 +28,7 @@ export default function Home() {
         </div>
         <nav className="hidden md:flex items-center gap-6 text-sm text-ink-700">
           <a href="#how" className="hover:text-ink-900">怎么用</a>
-          <a href="#why" className="hover:text-ink-900">和别的产品什么区别</a>
+          <a href="#why" className="hover:text-ink-900">Why 选驴</a>
           <a
             href="https://github.com/zjgttz/trippick"
             target="_blank"
