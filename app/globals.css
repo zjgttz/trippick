@@ -44,8 +44,16 @@ button, a, [role="button"] {
   transform: translateY(-2px);
 }
 
-/* 红色 focus 环（取代浏览器默认蓝色） */
-*:focus-visible {
+/* 红色 focus 环（取代浏览器默认蓝色）。
+   仅对真正可交互元素生效，避免红 ring 扩散到提示卡片等装饰性容器上
+   （手机透过粉底背景会显出偏紫蓝色调）。 */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px rgba(255, 36, 66, 0.18);
   border-radius: inherit;
