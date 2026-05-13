@@ -155,20 +155,21 @@ export default function Home() {
 
       {/* Why */}
       <section id="why" className="mx-auto max-w-6xl px-6 py-16">
-        <div className="rounded-3xl bg-gradient-to-br from-ink-900 to-ink-700 p-8 text-white md:p-12">
-          <div className="grid items-center gap-8 md:grid-cols-2">
+        <div className="rounded-3xl bg-white p-8 ring-1 ring-ink-100 md:p-12">
+          <div className="grid items-start gap-10 md:grid-cols-2">
             <div>
-              <h2 className="text-2xl font-bold md:text-3xl">
-                现有 AI 都在帮你"从零生成"
+              <div className="text-xs font-mono uppercase tracking-wider text-brand-500">Why TripPick</div>
+              <h2 className="mt-3 text-2xl font-bold leading-snug tracking-tight text-ink-900 md:text-3xl">
+                现有 AI 都在帮你<span className="text-ink-400">「从零生成」</span>
                 <br />
-                TripPick 帮你"从你已经认可的内容里做选择"
+                TripPick 帮你「从你已经认可的内容里<span className="text-brand-500">做选择</span>」
               </h2>
             </div>
-            <div className="space-y-3 text-sm text-white/80">
-              <p>用户的真实问题不是"我不知道去哪"，而是：</p>
-              <p className="text-xl font-semibold text-white">
-                "我已经看了很多，收藏了很多，但还是不知道怎么选。"
-              </p>
+            <div className="space-y-4 text-sm leading-relaxed text-ink-700">
+              <p className="text-ink-500">用户的真实问题不是「我不知道去哪」，而是：</p>
+              <blockquote className="border-l-2 border-brand-500 pl-4 text-lg font-semibold text-ink-900">
+                我已经看了很多，收藏了很多，但还是不知道怎么选。
+              </blockquote>
               <p>
                 收藏行为本身就是偏好表达。AI 的作用不是替你想，而是把你已经隐性表达的偏好整理出来。
               </p>
