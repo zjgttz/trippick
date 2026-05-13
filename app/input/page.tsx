@@ -349,22 +349,22 @@ export default function InputPage() {
                 className="mt-2 w-full resize-y rounded-lg bg-ink-100/60 px-3 py-2 text-sm text-ink-900 placeholder:text-ink-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-200"
               />
               {parseHints[i] && (
-                <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-600 ring-1 ring-brand-200">
-                  <span className="flex-1 min-w-0 inline-flex items-center gap-1.5">
-                    <FileText className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
-                    {parseHints[i]}
+                <div className="mt-2 flex flex-col gap-2 rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-600 ring-1 ring-brand-200 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="min-w-0 inline-flex items-start gap-1.5 sm:flex-1 sm:items-center">
+                    <FileText className="h-3.5 w-3.5 shrink-0 mt-0.5 sm:mt-0" strokeWidth={1.75} />
+                    <span className="leading-relaxed">{parseHints[i]}</span>
                   </span>
                   <div className="flex shrink-0 gap-2">
                     <button
                       onClick={() => applyParse(i)}
-                      className="rounded-md bg-brand-500 px-2 py-1 font-semibold text-white transition hover:bg-brand-600"
+                      className="btn-press flex-1 rounded-md bg-brand-500 px-2 py-1.5 font-semibold text-white hover:bg-brand-600 sm:flex-none sm:py-1"
                     >
                       清洗文案
                     </button>
                     <button
                       onClick={() => tryFetchXhs(i)}
                       disabled={fetchingIdx === i}
-                      className="inline-flex items-center gap-1 rounded-md bg-ink-900 px-2 py-1 font-semibold text-white transition hover:bg-ink-700 disabled:opacity-60"
+                      className="btn-press flex-1 inline-flex items-center justify-center gap-1 rounded-md bg-ink-900 px-2 py-1.5 font-semibold text-white hover:bg-ink-700 disabled:opacity-60 sm:flex-none sm:py-1"
                     >
                       <Link2 className="h-3 w-3" strokeWidth={2} />
                       {fetchingIdx === i ? "抓取中…" : "抓取笔记"}

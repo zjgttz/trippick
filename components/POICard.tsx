@@ -14,7 +14,45 @@ import {
 import type { POIItem } from "@/lib/schema";
 import { ConfidenceRing } from "./ConfidenceRing";
 import { useTripPickStore, type DecisionStatus } from "@/lib/store";
-import { buildXhsSearchUrl } from "@/lib/xhs-link";
+import { buildXhsAppOrWeb } from "@/lib/xhs-link";
+
+/**
+ * 在小红书打开 POI 搜索。
+ * - 手机：先试 app scheme（如 App 已装则直接打开小红书 App），1.5s 后未跳走则 fallback 到 web
+ * - 桌面：直接打开 web
+ * 为什么这么做：小红书在手机浏览器中未登录会强推 App，关弹窗后页面空白。
+ */
+function openXhs(poiName: string, destination?: string) {
+  const { app, web } = buildXhsAppOrWeb(poiName, destination);
+  const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+  const isMobile = /iPhone|iPad|iPod|Android|HarmonyOS/i.test(ua);
+
+  if (!isMobile) {
+    window.open(web, "_blank", "noopener,noreferrer");
+    return;
+  }
+
+  // 手机：试 app scheme，1.5s 后页面还在（说明 App 没装或未响应）→ fallback web
+  const start = Date.now();
+  const timer = setTimeout(() => {
+    // 页面还在前台才 fallback，避免从 App 返回时被踢到网页版
+    if (!document.hidden && Date.now() - start < 2000) {
+      window.location.href = web;
+    }
+  }, 1500);
+
+  // 使用 location.href 打开 app scheme。iOS Safari 需要从用户手势调起
+  window.location.href = app;
+
+  // 页面隐藏了（跳到 App）→ 取消 fallback
+  const onVisibility = () => {
+    if (document.hidden) {
+      clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVisibility);
+    }
+  };
+  document.addEventListener("visibilitychange", onVisibility);
+}
 
 interface Props {
   item: POIItem;
@@ -164,17 +202,16 @@ export function POICard({ item, hasConflict, compact }: Props) {
         })}
       </div>
 
-      {/* v2.0 新增：在小红书中查看更多 */}
+      {/* v2.0 新增：在小红书中查看更多（手机优先 App scheme） */}
       {!compact && (
-        <a
-          href={buildXhsSearchUrl(item.name, destination)}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
+          onClick={() => openXhs(item.name, destination)}
           className="mt-2 inline-flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700 hover:underline"
         >
           在小红书查看更多说明
           <ExternalLink className="h-3 w-3" strokeWidth={1.75} />
-        </a>
+        </button>
       )}
     </div>
   );

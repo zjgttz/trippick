@@ -116,11 +116,25 @@ export function TripMap({ pois, city: _city }: TripMapProps) {
           containerRef.current.addEventListener("click", enableDragging);
         }
 
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          maxZoom: 19,
-          attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-        }).addTo(map);
+        // 使用 CartoDB Voyager tile。原因：OSM 原站 tile 在国内移动网络上不稳定，
+        // CartoDB 在国内可达性更好且风格更现代（接近 Google Maps light）。
+        // 如 CartoDB 也倒，可一行 swap 回下面注释掉的 OSM 原站。
+        L.tileLayer(
+          "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+          {
+            maxZoom: 19,
+            subdomains: "abcd",
+            attribution:
+              '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+          },
+        ).addTo(map);
+
+        // Fallback：原版 OSM tile（如 CartoDB 遇到问题可快速 swap）
+        // L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        //   maxZoom: 19,
+        //   attribution:
+        //     '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        // }).addTo(map);
 
         // 1) 画 Day 连线（同一 Day 按 order 排序）
         const byDay = new Map<number, MapPOI[]>();
