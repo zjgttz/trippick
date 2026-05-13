@@ -55,7 +55,7 @@ export default function AnalyzingOverlay({ show }: { show: boolean }) {
         <div className="flex items-center gap-3">
           <span className="inline-block h-8 w-8 animate-spin rounded-full border-[3px] border-brand-500/30 border-t-brand-500" />
           <div>
-            <h2 className="text-lg font-bold text-ink-900">小驴正在帮你们对答案</h2>
+            <h2 className="text-lg font-bold text-ink-900">小驴分析中</h2>
             <p className="mt-0.5 text-xs text-ink-500">
               预计 1–2 分钟 · 已用 {formatElapsed(elapsed)}
             </p>
