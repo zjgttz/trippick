@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { wgs84ToGcj02 } from "@/lib/gcj02";
 
 const LEAFLET_CSS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
 const LEAFLET_JS = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
@@ -94,8 +95,14 @@ export function TripMap({ pois, city: _city }: TripMapProps) {
         if (cancelled || !containerRef.current) return;
         if (mapRef.current) return;
 
+        // Nominatim 返回 WGS-84，高德底图用 GCJ-02，所有坐标先做一次转换
+        const validGcj = valid.map((p) => {
+          const [lat, lng] = wgs84ToGcj02(p.lat, p.lng);
+          return { ...p, lat, lng };
+        });
+
         const center =
-          valid.length > 0 ? [valid[0]!.lat, valid[0]!.lng] : [35.0, 105.0];
+          validGcj.length > 0 ? [validGcj[0]!.lat, validGcj[0]!.lng] : [35.0, 105.0];
 
         const isMobile =
           typeof window !== "undefined" &&
@@ -116,29 +123,32 @@ export function TripMap({ pois, city: _city }: TripMapProps) {
           containerRef.current.addEventListener("click", enableDragging);
         }
 
-        // 使用 CartoDB Voyager tile。原因：OSM 原站 tile 在国内移动网络上不稳定，
-        // CartoDB 在国内可达性更好且风格更现代（接近 Google Maps light）。
-        // 如 CartoDB 也倒，可一行 swap 回下面注释掉的 OSM 原站。
+        // 使用高德 WMTS（中文标签 + 国内 POI 覆盖好 + 免 key）。
+        // 高德底图坐标系是 GCJ-02，所以 marker 坐标已在上方转换。
+        // 注意：subdomains 01-04，需要在 URL 模板里用 {s} 引用。
+        // Fallback 注释保留：CartoDB Voyager / OSM 原站。
         L.tileLayer(
-          "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+          "https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}",
           {
-            maxZoom: 19,
-            subdomains: "abcd",
-            attribution:
-              '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            maxZoom: 18,
+            subdomains: "1234",
+            attribution: '&copy; <a href="https://amap.com">高德地图</a>',
           },
         ).addTo(map);
 
-        // Fallback：原版 OSM tile（如 CartoDB 遇到问题可快速 swap）
+        // Fallback ①：CartoDB Voyager（国际，英文标签）
+        // L.tileLayer(
+        //   "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+        //   { maxZoom: 19, subdomains: "abcd", attribution: "..." },
+        // ).addTo(map);
+        // Fallback ②：OSM 原站
         // L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        //   maxZoom: 19,
-        //   attribution:
-        //     '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        //   maxZoom: 19, attribution: "...",
         // }).addTo(map);
 
         // 1) 画 Day 连线（同一 Day 按 order 排序）
         const byDay = new Map<number, MapPOI[]>();
-        for (const p of valid) {
+        for (const p of validGcj) {
           if (!p.day || p.source === "ai_recommended") continue;
           if (!byDay.has(p.day)) byDay.set(p.day, []);
           byDay.get(p.day)!.push(p);
@@ -157,7 +167,7 @@ export function TripMap({ pois, city: _city }: TripMapProps) {
 
         // 2) 画 Marker（带序号 / Day 颜色）
         const markers: any[] = [];
-        for (const p of valid) {
+        for (const p of validGcj) {
           const color = colorOf(p);
           const isAI = p.source === "ai_recommended";
           const displayName =
@@ -229,7 +239,7 @@ export function TripMap({ pois, city: _city }: TripMapProps) {
           markers.push(marker);
         }
 
-        if (valid.length > 1) {
+        if (validGcj.length > 1) {
           const group = L.featureGroup(markers);
           map.fitBounds(group.getBounds().pad(0.2));
         }
@@ -273,7 +283,7 @@ export function TripMap({ pois, city: _city }: TripMapProps) {
       {/* 图例 */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-ink-500">
         <div>
-          地图基于 OpenStreetMap，标注了 {valid.length} 个地点
+          地图基于高德地图，标注了 {valid.length} 个地点
           {failed.length > 0 && (
             <span className="ml-2 text-amber-600">
               · {failed.length} 个未能定位
@@ -304,7 +314,7 @@ export function TripMap({ pois, city: _city }: TripMapProps) {
             {failed.map((p) => p.name).join("、")}
           </div>
           <div className="mt-1 text-amber-600/80">
-            可能是地名不规范或 OpenStreetMap 暂无收录，行程视图仍可正常查看
+            可能是地名不规范或暂无收录，行程视图仍可正常查看
           </div>
         </div>
       )}

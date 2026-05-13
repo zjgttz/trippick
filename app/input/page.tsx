@@ -59,7 +59,7 @@ export default function InputPage() {
         setParseHints((prev) =>
           prev.map((h, idx) =>
             idx === i
-              ? `检测到小红书分享文案${r.shortLink ? "（含链接）" : ""}，可一键清洗为正文`
+              ? `检测到小红书分享文案${r.shortLink ? "（含链接），可点击抓取正文" : "，可一键清洗为正文"}`
               : h,
           ),
         );

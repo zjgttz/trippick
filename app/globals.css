@@ -13,6 +13,11 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* iOS Safari 点击元素时的默认蓝色高亮浮层（tap highlight），全局透明化 */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* 隐藏滚动条但保留滚动能力（横向卡片列） */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
