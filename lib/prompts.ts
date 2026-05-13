@@ -50,7 +50,14 @@ conflict_type 仅可取：
 
 每个 conflict 必须含 items(名称取自传入 items.name)、reason、suggestion。
 
-itinerary_suggestion：默认 2 天，items>12 可排 3 天；同日地理就近；高 confidence 排 morning/afternoon；餐厅放用餐时段；每 slot 1-3 项；note 给实用建议。
+itinerary_suggestion：默认 2 天，items>12 可排 3 天；同日地理就近；高 confidence 排 morning/afternoon；餐厅放用餐时段；note 给实用建议。
+
+【关键 — 行程密度规则，必须严格遵守】
+- 每个半天（morning / afternoon）**默认安排 2 个地点**（1 个主景点 + 1 个餐厅 或 2 个相邻景点），不要塞满。
+- 晚上（evening）默认 1 个（晚餐 或 夜景 二选一），住宿单独算不占名额。
+- **只有当总 items > 10 且地理紧凑时**，才可以把某些半天扩到 3 个，但不能每个半天都 3 个。
+- 宁可空着，不要塞满。游客每个景点平均要 1.5-2 小时（含吃饭+移动），半天 4 小时撑死装 3 个，2 个最舒服。
+- 不要为了「展示更多内容」而过度填充。优先保留 confidence 高的，宁缺勿滥。
 
 严格 JSON 输出，无 markdown。`;
 

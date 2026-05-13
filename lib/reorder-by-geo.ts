@@ -27,11 +27,24 @@ type CoordMap = Record<string, Coord | null>;
 const SLOTS: TimeSlot[] = ["morning", "afternoon", "evening"];
 
 /** 每个时段的硬容量上限（景点+餐厅计）。上午/下午 3、晚上 2，避免 LLM 塑上午塑 5 个走不完的情况。 */
-const SLOT_CAPACITY_MAX: Record<TimeSlot, number> = {
+const SLOT_CAPACITY_BASE: Record<TimeSlot, number> = {
+  morning: 2,
+  afternoon: 2,
+  evening: 1,
+};
+const SLOT_CAPACITY_DENSE: Record<TimeSlot, number> = {
   morning: 3,
   afternoon: 3,
   evening: 2,
 };
+
+/**
+ * v2.3+：动态容量。本天 pool size > 5（超过 base 总和 2+2+1=5）时才放宽到 dense。
+ * 默认每半天 2 个，晚上 1 个；选多了才加到 3/3/2。
+ */
+function getCapacity(poolSize: number): Record<TimeSlot, number> {
+  return poolSize > 5 ? SLOT_CAPACITY_DENSE : SLOT_CAPACITY_BASE;
+}
 
 /** 离群点阈值：距离主群重心 > 8km 的点会被拿出来单独占一个 slot。 */
 const OUTLIER_DISTANCE_KM = 8;
@@ -179,12 +192,14 @@ function reorderDay(
     finalMain[0]!;
   const orderedMain = nearestNeighborOrder(finalMain, coords, startName);
 
-  // 5. 【v2.1 增强】按硬容量上限填时段 + outlier 单独占半天
+  // 5. 【v2.3+】按动态容量上限填时段 + outlier 单独占半天
+  // 本天 pool 少 → 每半天 2 个；pool > 5 → 放宽到 3/3/2。
+  const totalPoolSize = orderedMain.length + finalOutliers.length;
+  const SLOT_CAPACITY = getCapacity(totalPoolSize);
   const newPool: Record<TimeSlot, string[]> = { morning: [], afternoon: [], evening: [] };
   let cursor = 0;
-  // 先填主池到 morning（上限 3）
   for (const t of SLOTS) {
-    const cap = SLOT_CAPACITY_MAX[t];
+    const cap = SLOT_CAPACITY[t];
     // outlier 会独占 1 个位置，预留：下午优先留给 outlier
     let availableCap = cap;
     if (t === "afternoon" && finalOutliers.length > 0) {
@@ -199,7 +214,7 @@ function reorderDay(
   }
   // outliers 填入 afternoon（首选）；若 afternoon 已满则 evening
   for (const o of finalOutliers) {
-    if (newPool.afternoon.length < SLOT_CAPACITY_MAX.afternoon) {
+    if (newPool.afternoon.length < SLOT_CAPACITY.afternoon) {
       newPool.afternoon.push(o);
     } else {
       newPool.evening.push(o);
