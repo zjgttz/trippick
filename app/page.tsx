@@ -30,7 +30,7 @@ export default function Home() {
           <a href="#how" className="hover:text-ink-900">怎么用</a>
           <a href="#why" className="hover:text-ink-900">和别的产品什么区别</a>
           <a
-            href="https://github.com"
+            href="https://github.com/zjgttz/trippick"
             target="_blank"
             rel="noreferrer"
             className="hover:text-ink-900"
