@@ -359,7 +359,7 @@ export default function InputPage() {
                       onClick={() => applyParse(i)}
                       className="rounded-md bg-brand-500 px-2 py-1 font-semibold text-white transition hover:bg-brand-600"
                     >
-                      只清洗文案
+                      清洗文案
                     </button>
                     <button
                       onClick={() => tryFetchXhs(i)}
@@ -367,7 +367,7 @@ export default function InputPage() {
                       className="inline-flex items-center gap-1 rounded-md bg-ink-900 px-2 py-1 font-semibold text-white transition hover:bg-ink-700 disabled:opacity-60"
                     >
                       <Link2 className="h-3 w-3" strokeWidth={2} />
-                      {fetchingIdx === i ? "抓取中…" : "试试自动抓取正文"}
+                      {fetchingIdx === i ? "抓取中…" : "抓取笔记"}
                     </button>
                   </div>
                 </div>
