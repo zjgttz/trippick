@@ -62,6 +62,7 @@ function ItineraryInner() {
   const setDecision = useTripPickStore((s) => s.setDecision);
   const partnerDecisions = useTripPickStore((s) => s.partnerDecisions);
   const setPartnerDecisions = useTripPickStore((s) => s.setPartnerDecisions);
+  const coopSessionActive = useTripPickStore((s) => s.coopSessionActive);
   const setAnalysis = useTripPickStore((s) => s.setAnalysis);
   const customItinerary = useTripPickStore((s) => s.customItinerary);
   const setCustomItinerary = useTripPickStore((s) => s.setCustomItinerary);
@@ -83,7 +84,8 @@ function ItineraryInner() {
   const [dragSrc, setDragSrc] = useState<DragSrc | null>(null);
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null);
   // v2.0: 默认不启动多人同步。点「邀请同行人」或从分享链接进入时才启动。
-  const [coopEnabled, setCoopEnabled] = useState(false);
+  // v2.4: 如果 store 里有协同会话状态，进页自动恢复同步（修「返回重粘贴→同行人消失」）
+  const [coopEnabled, setCoopEnabled] = useState(coopSessionActive);
   const { tripId, peerCount, lastPeerUpdate } = useRealtimeSync(coopEnabled);
   // v2.0 M4: tab 切换 + 地图坐标
   const [activeTab, setActiveTab] = useState<"timeline" | "map">("timeline");
@@ -96,8 +98,9 @@ function ItineraryInner() {
     if (partner) {
       setPartnerDecisions(partner);
       setCoopEnabled(true); // 从分享链接进来 → 自动启用同步
-    } else if (!fromShare) {
-      // 单人模式：清掉上次会话残留的 partnerDecisions，避免误报「同行人」
+    } else if (!fromShare && !coopSessionActive) {
+      // v2.4: 仅在「从未启动过协同」时才清 partnerDecisions。
+      // 一旦 coopSessionActive=true，保持同行人状态，让轮询继续拉最新。
       setPartnerDecisions(null);
     }
     // 从URL看是否带 trip_id（分享者发来的同步链接）
@@ -109,7 +112,7 @@ function ItineraryInner() {
         .then((r) => r.json())
         .then((m) => setAnalysis({ ...m, is_mock: true }));
     }
-  }, [fromShare, analysis, setPartnerDecisions, setAnalysis]);
+  }, [fromShare, analysis, coopSessionActive, setPartnerDecisions, setAnalysis]);
 
   const accepted = useMemo(() => getAcceptedItems(decisions), [decisions]);
   const acceptedSet = useMemo(() => new Set(accepted), [accepted]);

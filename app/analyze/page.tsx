@@ -6,7 +6,6 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   RotateCcw,
-  Sparkles,
   ArrowRight,
   Landmark,
   UtensilsCrossed,
@@ -63,44 +62,15 @@ function AnalyzeInner() {
   const decisions = useTripPickStore((s) => s.decisions);
 
   const [loadingDemo, setLoadingDemo] = useState(false);
-  const [enriching, setEnriching] = useState(false);
-  const [enrichedItems, setEnrichedItems] = useState<POIItem[]>([]);
   // v2.0: 默认不启用多人同步。仅当 URL 中明确是分享链接进来时启用。
   const fromShare = search.get("from") === "share";
   const { peerCount } = useRealtimeSync(!!analysis && fromShare);
 
-  // v2.0: POI 数量偶少时异步调用 enrich 接口补充
-  useEffect(() => {
-    if (
-      !analysis ||
-      analysis.is_mock ||
-      analysis.items.length >= 6 ||
-      enrichedItems.length > 0 ||
-      enriching
-    )
-      return;
-    setEnriching(true);
-    const existing = analysis.items.map((i) => i.name);
-    fetch("/api/enrich", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        destination: analysis.destination,
-        existing_names: existing,
-        trip_style: analysis.trip_style,
-      }),
-    })
-      .then((r) => r.json())
-      .then((data: { ok?: boolean; items?: POIItem[] }) => {
-        if (data.ok && data.items && data.items.length > 0) {
-          setEnrichedItems(data.items);
-        }
-      })
-      .catch(() => {
-        /* 静默失败 */
-      })
-      .finally(() => setEnriching(false));
-  }, [analysis, enrichedItems.length, enriching]);
+  // v2.4: 关闭 AI 自主补点。
+  // 产品红线：不推荐用户没选过的地点。enrich 接口代码保留，随时可重启。
+  // 原逻辑：当抽出 POI < 6 时 LLM 补 3-5 个热门点，带 "⭐ AI 补充" 标签。
+  // 测试发现会污染“只用用户收藏」这个核心体验，故默认关闭。
+  // 原代码：参见 app/api/enrich/route.ts 以及本文件 git 历史。
 
   // 如果没数据但是 ?demo=1，自动加载 mock
   useEffect(() => {
@@ -115,11 +85,11 @@ function AnalyzeInner() {
     }
   }, [analysis, isDemo, setAnalysis]);
 
-  // 合并原始 items + AI 补充的
+  // v2.4: 仅使用用户收藏抽出的 items，不再拼接 AI 补充。
   const allItems = useMemo<POIItem[]>(() => {
     if (!analysis) return [];
-    return [...analysis.items, ...enrichedItems];
-  }, [analysis, enrichedItems]);
+    return analysis.items;
+  }, [analysis]);
 
   const grouped = useMemo(() => {
     if (!analysis) return null;
@@ -213,18 +183,7 @@ function AnalyzeInner() {
           <h1 className="text-3xl font-bold tracking-tight">
             <span className="text-brand-500">{analysis.destination}</span> · 候选 {allItems.length} 项
           </h1>
-          {enriching && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-purple-50 px-3 py-1 text-xs text-purple-700 ring-1 ring-purple-200">
-              <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-purple-300 border-t-purple-600" />
-              AI 正在为你补充热门推荐
-            </span>
-          )}
-          {!enriching && enrichedItems.length > 0 && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-ink-50 px-3 py-1 text-xs text-ink-700 ring-1 ring-ink-200">
-              <Sparkles className="h-3 w-3 text-ink-500" strokeWidth={1.75} />
-              含 {enrichedItems.length} 个 AI 补充
-            </span>
-          )}
+
           {peerCount > 0 && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700 ring-1 ring-green-200">
               <span className="relative flex h-2 w-2">

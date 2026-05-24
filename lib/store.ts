@@ -17,6 +17,8 @@ interface TripPickState {
   decisions: Record<string, DecisionStatus>;
   /** 协同模式下来自伙伴的选择（只读） */
   partnerDecisions: Record<string, DecisionStatus> | null;
+  /** v2.4: 协同会话是否已建立（用于跨页面恢复同步状态） */
+  coopSessionActive: boolean;
   /** 用户手动调整后的行程，未调整时为 null（用 analysis.itinerary_suggestion） */
   customItinerary: ItineraryDay[] | null;
 
@@ -24,6 +26,7 @@ interface TripPickState {
   setDecision: (name: string, status: DecisionStatus) => void;
   resetDecisions: () => void;
   setPartnerDecisions: (d: Record<string, DecisionStatus> | null) => void;
+  setCoopSessionActive: (active: boolean) => void;
   setCustomItinerary: (it: ItineraryDay[] | null) => void;
   clearAll: () => void;
 }
@@ -35,18 +38,26 @@ export const useTripPickStore = create<TripPickState>()(
       decisions: {},
       partnerDecisions: null,
       customItinerary: null,
+      coopSessionActive: false,
 
       setAnalysis: (a) =>
-        set({
+        set((s) => ({
           analysis: a,
           decisions: {},
           customItinerary: null,
-          partnerDecisions: null,
-        }),
+          // v2.4: 重新分析时保留协同会话状态，避免「返回粘贴新帖子→同行人消失」的问题
+          partnerDecisions: s.coopSessionActive ? s.partnerDecisions : null,
+        })),
       setDecision: (name, status) =>
         set((s) => ({ decisions: { ...s.decisions, [name]: status } })),
       resetDecisions: () => set({ decisions: {} }),
-      setPartnerDecisions: (d) => set({ partnerDecisions: d }),
+      setPartnerDecisions: (d) =>
+        set((s) => ({
+          partnerDecisions: d,
+          // 一旦有伙伴数据进来 → 标记协同会话已建立
+          coopSessionActive: s.coopSessionActive || d !== null,
+        })),
+      setCoopSessionActive: (active) => set({ coopSessionActive: active }),
       setCustomItinerary: (it) => set({ customItinerary: it }),
       clearAll: () =>
         set({
@@ -54,6 +65,7 @@ export const useTripPickStore = create<TripPickState>()(
           decisions: {},
           partnerDecisions: null,
           customItinerary: null,
+          coopSessionActive: false,
         }),
     }),
     {
