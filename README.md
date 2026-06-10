@@ -36,7 +36,6 @@
 - 🗺️ **国内地图原生** — 高德地图 + 中文标注 + GCJ-02 坐标修正
 - 👥 **轻量协作** — 一条分享链接，"驴友意见不合"自动标出
 - 🎯 **克制的行程密度** — 每半天 2 个地点，宁缺勿滥
-- 🆘 **Mock Fallback** — API 挂了也能演示，评委体验保险
 
 ## 五步核心流程
 
@@ -130,8 +129,6 @@ public/
 ---
 
 <div align="center">
-
-**Built with 🫏 in 48h.**
 
 [trippick.win](https://trippick.win) · [Issues](https://github.com/zjgttz/trippick/issues)
 
